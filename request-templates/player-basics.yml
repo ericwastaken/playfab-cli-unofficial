@@ -1,0 +1,16 @@
+# Request template for get-player-combined-info (server or client).
+# A PlayFab GetPlayerCombinedInfo request body; "$.<column>" takes that input column's value.
+# Built-in template. Copy to user-<name>.yml (gitignored) to add the data keys /
+# statistics you need, and use -r user-<name>.
+PlayFabId: $.PlayFabId
+InfoRequestParameters:
+  GetPlayerProfile: true
+  ProfileConstraints:
+    ShowDisplayName: true
+    ShowCreated: true
+    ShowLastLogin: true
+  GetUserAccountInfo: true
+  GetUserData: true
+  UserDataKeys: []            # empty = all keys the caller may read; or list key names
+  GetPlayerStatistics: true
+  PlayerStatisticNames: []    # empty = all statistics; or list statistic names

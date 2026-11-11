@@ -26,8 +26,7 @@ in this same `projects/ericwastaken/` folder). Fold them in as commands, not sid
   examples. Anything client-specific belongs in the gitignored
   `pfcli-config-<client>.yml` / `pfcli-secrets-<client>.yml`.
 - **Ignore by pattern.** `.gitignore` ignores every `pfcli*.yml|yaml` (and any `.env`
-  variant) and everything in `output-formats/`, re-including only `*.example.yml`
-  templates. Keep new config/secrets
+  variant) plus `output-formats/user-*` and `request-templates/user-*`. Keep new config/secrets
   names starting with `pfcli` and ending `.yml`; do not add per-file ignore lines.
 - **Not read-only; credentials decide.** pfcli may read and write; what it can do is
   governed by the credentials supplied. Every command uses `pf_command` with
@@ -39,13 +38,55 @@ in this same `projects/ericwastaken/` folder). Fold them in as commands, not sid
   `TitleClient.call()` with PlayFab's response untouched. Default output is NDJSON of
   those; `--raw` prints only the response; `-o/--output-format` reshapes any command's
   output with a format file from `output-formats/`. Never add command-specific output
-  files or formats (Eric's rule); add a generic `output-formats/*.example.yml` instead.
+  files or formats (Eric's rule); add a generic built-in format to `output-formats/`.
+- **Built-in vs user files (Eric's rule).** Formats/templates that ship with pfcli are
+  generic and committed (`output-formats/NAME.yml`, `request-templates/NAME.yml`). A
+  user's own (client-specific) ones are `user-<name>.yml` and gitignored. Never give a
+  client-specific file a name without the `user-` prefix.
 - **Several titles per command (a feature Eric values).** Commands that call PlayFab
   take `ALIAS...` (one or more titles), call each with its own host and key, emit records
   tagged with `title`/`titleId`, skip a failing title with a stderr message and keep
   going, and exit 1 if any failed. New commands must follow the same pattern.
+- **Client commands: two-step sessions (Eric's requirement).** `client
+  login-with-custom-id` (READ WRITE) saves sessions; every other client command takes
+  `--custom-id`, uses the saved session and never logs in by itself. The README and the
+  `--help` of EVERY client command must explain this: pass `notes=SESSION_NOTES` to
+  `pf_command`. Session tickets are credentials: never print them (use `sessions.redact`
+  / `sessions.public`). `client sessions list|flush` manage the local file.
+- **Inputs and templates.** Bulk commands take repeatable IDs plus `--input FILE|-`
+  (CSV or NDJSON, so pfcli output pipes into pfcli) and `--request` templates from
+  `request-templates/` (built-in) or `user-*` ones (gitignored).
+- **Title-specific stays in user config (Eric's rule).** CloudScript function names,
+  their parameter shapes and player sequences (`player.create|update|state`) are unique to
+  a client/game: put them ONLY in the gitignored `pfcli-config-<client>.yml`. Committed
+  files (README, `pfcli-config.example.yml`, code) use generic names (`savePlayerSettings`,
+  `getPlayerState`).
+- **Options vs request objects (Eric's rule).** The CLI supplies values, never structure:
+  options for small flat PlayFab-defined requests; request templates for nested or
+  many-switch ones; the config for title-defined shapes (CloudScript, player sequences);
+  values via `--var NAME=VALUE`, `$.column` rows, or reserved session names
+  (`$session $playFabId $customId $titleId`); `$NAME?` is optional. Resolver:
+  `lib/inputs.resolve`.
+- **Credentials never reach output.** Every client record is scrubbed (request AND
+  response) of the session ticket it used, via `client.protect()`; some CloudScripts echo
+  the ticket back. Title-specific credentials (e.g. a game's login keys) go in the title's
+  `redact` regex list in the user config. New code that emits records must pass them
+  through `protect()` (TitleClient/PlayerClient `call()` already do).
+- **Player sequences.** `client create-player` (login CreateAccount + player.create steps),
+  `update-player`, `get-player-state` (READ ONLY: refuses writing steps). Steps are
+  `cloudscript: NAME` (must be in the allow list) or `call: Family/Endpoint` (must be in
+  ALLOWED_ENDPOINTS; Server/Admin use the secret key). `login --create-account` refuses on
+  titles with player.create unless `--skip-create-steps`.
+- **CloudScript allow list.** `client execute-cloud-script` only runs functions listed
+  under the title's (or defaults') `cloudscripts` in the config, checked before any call.
+  `writes: false` marks read-only functions (they run under --dry-run). Parameter
+  placeholders `$session`/`$playFabId`/`$customId` come from the saved session; tickets
+  are scrubbed from echoed requests. CloudScript reports failures inside HTTP 200
+  (`data.Error`, or an error-shaped `FunctionResult`); the command treats both as failure.
+- **Access tags.** READ ONLY, READ WRITE (PlayFab writes) or LOCAL WRITE (changes a local
+  pfcli file only); the last two get `--dry-run` automatically.
 - **Command naming.** Commands that call PlayFab go in their API family's group
-  (`server`, later `admin` / `client`) and are named after the endpoint in kebab-case.
+  (`server`, `client`, later `admin`) and are named after the endpoint in kebab-case.
 - **Client API caution.** A Client login can create players or run the title's login
   CloudScript, which writes; say so when a command would use one.
 - **uv only.** `uv sync`, `uv run pfcli.py ...`, `uv add <pkg>`. Never `pip install`
@@ -70,6 +111,10 @@ in this same `projects/ericwastaken/` folder). Fold them in as commands, not sid
 
 Created 2026-11-10. Local git repo on `main`; no remote yet. Secrets moved from .env to
 YAML (keyed by title ID) on 2026-11-10.
-Commands: `titles`, `server get-leaderboard` (verified against live titles). The old
-`leaderboard-names` / `names-report` commands and the `--json` flag were replaced by the
-stdout output pipeline and output formats.
+Commands: `titles`; `server get-leaderboard | get-title-data | get-player-combined-info`
+(verified live); `client login-with-custom-id | get-leaderboard | get-player-profile |
+get-user-data | get-account-info | get-player-combined-info |
+update-user-title-display-name | execute-cloud-script | create-player | update-player |
+get-player-state | sessions list | sessions flush`
+(verified against a local
+fake PlayFab server; not yet run against a real title).

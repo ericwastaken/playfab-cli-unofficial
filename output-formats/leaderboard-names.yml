@@ -1,5 +1,6 @@
 # Names list from `server get-leaderboard`: one CSV row per unique (title, name).
-# Copy to leaderboard-names.yml (gitignored) to customize, e.g. the exclude patterns.
+# Built-in format. To customize (e.g. the exclude patterns), copy it to
+# user-<name>.yml (gitignored) and use -o user-<name>.
 description: Unique display names per title from leaderboard pages
 format: csv
 rows: response.data.Leaderboard        # one output row per leaderboard entry

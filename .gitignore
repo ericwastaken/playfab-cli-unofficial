@@ -1,13 +1,15 @@
 # --- Config and secrets: ignore every variant, keep only the committed examples ---
 # Any pfcli*.yml / pfcli*.yaml (pfcli-config-<client>.yml, pfcli-secrets-<client>.yml,
-# typos, backups)
+# pfcli-sessions-<client>.yml, typos, backups)
 pfcli*.yml
 pfcli*.yaml
+pfcli*.tmp
 !pfcli-config.example.yml
 !pfcli-secrets.example.yml
-# Output formats: your own are local; only the generic examples are committed
-output-formats/*
-!output-formats/*.example.yml
+# User output formats and request templates (user-*.yml) are local; the built-in ones
+# that ship with pfcli are committed
+output-formats/user-*
+request-templates/user-*
 # Env files are not used by pfcli; ignored anyway so a stray one never leaks
 .env
 .env.*

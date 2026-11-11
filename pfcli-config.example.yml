@@ -16,3 +16,58 @@ titles:
     title_id: ABCD2
     description: Example dev title on a dedicated cluster
     host: "https://{title_id}.example-cluster.playfabapi.com"
+    # Title-specific parts (CloudScript names, parameters, player sequences, redact
+    # patterns) belong ONLY in your own gitignored pfcli-config-<client>.yml. Everything
+    # below is a generic example.
+    #
+    # Placeholders: $session $playFabId $customId $titleId (from the saved session),
+    # $NAME (required, --var NAME=VALUE), $NAME? (optional: left out when not given).
+    # Inside a one-line { } map, quote optional ones: "$color?".
+    #
+    # CloudScript functions `client execute-cloud-script` may run on this title
+    # (merged with defaults.cloudscripts by name; `name: null` removes a default).
+    cloudscripts:
+      getPlayerState:
+        description: Read the player's saved state
+        writes: false                 # read-only: still runs under --dry-run
+        parameter: { session: $session }
+      savePlayerSettings:
+        description: Save the player's settings
+        writes: true                  # default; --dry-run will not send it
+        parameter:
+          id: $playFabId
+          session: $session
+          name: $name?
+          color: $color?
+    #
+    # How this title creates, updates and reads its players. Each sequence is a list of
+    # steps run in order as the player (stops at the first failure). A step is either
+    # `cloudscript: NAME` (from the list above) or `call: Family/Endpoint` with a `body`.
+    player:
+      create:                         # client create-player: runs after a login with CreateAccount
+        description: Seed the player's data, then set the display name (endpoint calls)
+        steps:
+          - call: Server/UpdateUserData           # Server steps use the title secret key
+            body:
+              PlayFabId: $playFabId
+              Data:
+                profileVersion: "1"
+                color: $color?
+          - call: Client/UpdateUserTitleDisplayName   # Client steps run as the player
+            body: { DisplayName: $name }
+      update:                         # client update-player
+        description: Save settings through the title's CloudScript
+        steps:
+          - cloudscript: savePlayerSettings
+      state:                          # client get-player-state: every step must only read
+        description: Profile and data, read with two endpoint calls
+        steps:
+          - call: Client/GetPlayerProfile
+            body: { PlayFabId: $playFabId, ProfileConstraints: { ShowDisplayName: true } }
+          - call: Client/GetUserData
+            body: { Keys: [profileVersion, color] }
+    #
+    # Credentials the title's own data or CloudScript can return (e.g. a secondary login
+    # key): regex patterns replaced by <redacted> in every output record.
+    redact:
+      - 'LOGINKEY-[0-9a-f]+'

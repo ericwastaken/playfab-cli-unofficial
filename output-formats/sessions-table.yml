@@ -1,0 +1,9 @@
+# `client sessions list` as a tab-separated table.
+description: Saved player sessions as TSV
+format: tsv
+fields:
+  title: title
+  customId: customId
+  playFabId: playFabId
+  loggedInAt: loggedInAt
+  expired: expired

@@ -1,0 +1,10 @@
+# `server get-title-data` as one CSV row per title and key (like a scheduled snapshot).
+# Append to a running log with >> (header repeats; use a format with format: text to avoid it).
+description: One CSV row per title and TitleData key
+format: csv
+rows: to_entries(response.data.Data)
+fields:
+  at: at                    # UTC time of the call (pfcli envelope)
+  title: title
+  key: row.key
+  value: row.value

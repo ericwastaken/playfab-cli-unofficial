@@ -1,6 +1,8 @@
 import click
 
+from ..inputs import placeholders
 from ..pfcommand import READ_ONLY, pf_command
+from .client.sequences import describe
 
 
 @pf_command("titles", READ_ONLY)
@@ -9,7 +11,8 @@ def titles(ctx):
     """List configured titles and whether each secret key is found (never prints keys).
 
     One output record per title: alias, titleId, host, key (set (file) / set (env) /
-    EMPTY) and description. The config and secrets files used are reported on stderr.
+    EMPTY), the CloudScript functions allowed for client execute-cloud-script (with the
+    placeholders each takes), the player sequences, and description. The config and secrets files used are reported on stderr.
     """
     cfg, emit = ctx.obj.config, ctx.obj.emitter.emit
     click.echo(f"config:  {cfg.path}\nsecrets: {cfg.secrets.path or 'none (environment only)'}", err=True)
@@ -17,4 +20,7 @@ def titles(ctx):
         t = cfg.title(alias)
         emit({"alias": alias, "titleId": t["title_id"], "host": t["host"],
               "key": f"set ({t['key_source']})" if t["key"] else "EMPTY",
+              "cloudscripts": {n: {"writes": s["writes"], "takes": placeholders(s["parameter"])}
+                               for n, s in sorted(t["cloudscripts"].items())},
+              "player": describe(t),
               "description": t.get("description", "")})

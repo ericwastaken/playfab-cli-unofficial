@@ -1,7 +1,7 @@
 """stdout output for every pfcli command.
 
 Commands hand each result record to Emitter.emit(). A PlayFab call's record is an
-envelope: {title, titleId, endpoint, request, [input], response} where `response` is
+envelope: {title, titleId, endpoint, at, request, [input], response} where `response` is
 PlayFab's own reply, untouched. Without a format, each record is printed as one JSON line
 (NDJSON); with --raw only `response` is printed. With --output-format, the same records
 are reshaped by an output format file instead. Logs and progress never go to stdout.
@@ -13,7 +13,10 @@ import sys
 from pathlib import Path
 
 import jmespath
+import jmespath.functions
 import yaml
+
+from .files import NamedFileError, find_named
 
 FORMATS = ("ndjson", "json", "yaml", "csv", "tsv", "text")
 FORMAT_KEYS = {"format", "rows", "fields", "drop_empty", "exclude", "unique", "description"}
@@ -25,21 +28,32 @@ class FormatError(RuntimeError):
 
 
 def find_format(spec: str, config_dir: Path, tool_dir: Path) -> Path:
-    """A path (has a '/' or ends in .yml/.yaml) is used as given; a bare NAME is looked up as
-    output-formats/NAME.yml, then NAME.example.yml, next to the config, then in the tool folder."""
-    if "/" in spec or spec.endswith((".yml", ".yaml")):
-        p = Path(spec).expanduser()
-        if not p.exists():
-            raise FormatError(f"Output format file not found: {spec}")
-        return p
-    tried = []
-    for base in dict.fromkeys([config_dir.resolve(), tool_dir.resolve()]):
-        for name in (f"{spec}.yml", f"{spec}.example.yml"):
-            p = base / FORMATS_DIR / name
-            tried.append(str(p))
-            if p.exists():
-                return p
-    raise FormatError(f"Output format '{spec}' not found. Tried:\n  " + "\n  ".join(tried))
+    try:
+        return find_named(spec, FORMATS_DIR, config_dir, tool_dir, "Output format")
+    except NamedFileError as e:
+        raise FormatError(str(e))
+
+
+class _Functions(jmespath.functions.Functions):
+    """Extra JMESPath functions for output formats."""
+
+    @jmespath.functions.signature({"types": ["object", "null"]})
+    def _func_to_entries(self, obj):
+        """{a: 1} -> [{key: "a", value: 1}] (like jq's to_entries)."""
+        return [{"key": k, "value": v} for k, v in (obj or {}).items()]
+
+    @jmespath.functions.signature({"types": ["string", "null"]})
+    def _func_from_json(self, s):
+        """Parse a JSON string (e.g. a UserData or TitleData value); non-JSON stays as is."""
+        if s is None:
+            return None
+        try:
+            return json.loads(s)
+        except ValueError:
+            return s
+
+
+OPTIONS = jmespath.Options(custom_functions=_Functions())
 
 
 class OutputFormat:
@@ -75,13 +89,13 @@ class OutputFormat:
     def shape(self, record):
         """Yield output rows for one record."""
         if self.rows is not None:
-            items = self.rows.search(record)
+            items = self.rows.search(record, options=OPTIONS)
             items = [] if items is None else items if isinstance(items, list) else [items]
             contexts = [({**record, "row": it} if isinstance(record, dict) else {"row": it}, it) for it in items]
         else:
             contexts = [(record, record)]
         for ctx, item in contexts:
-            row = {k: expr.search(ctx) for k, expr in self.fields.items()} if self.fields else item
+            row = {k: expr.search(ctx, options=OPTIONS) for k, expr in self.fields.items()} if self.fields else item
             if self.fields and not self._keep(row):
                 continue
             yield row
@@ -99,6 +113,8 @@ class OutputFormat:
 def _cell(v) -> str:
     if v is None:
         return ""
+    if isinstance(v, bool):
+        return "true" if v else "false"
     if isinstance(v, (dict, list)):
         return json.dumps(v, ensure_ascii=False)
     return str(v)

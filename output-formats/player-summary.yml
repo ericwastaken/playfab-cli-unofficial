@@ -1,0 +1,10 @@
+# `get-player-combined-info` (server or client) as one CSV row per player.
+description: One CSV row per player from GetPlayerCombinedInfo
+format: csv
+fields:
+  title: title
+  playFabId: request.PlayFabId
+  displayName: response.data.InfoResultPayload.PlayerProfile.DisplayName
+  created: response.data.InfoResultPayload.PlayerProfile.Created
+  lastLogin: response.data.InfoResultPayload.PlayerProfile.LastLogin
+  error: response.errorMessage
