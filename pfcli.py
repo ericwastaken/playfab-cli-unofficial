@@ -17,6 +17,7 @@ from lib.commands.client.get_player_state import get_player_state
 from lib.commands.client.update_player import update_player
 from lib.commands.client.get_catalog_items import get_catalog_items as client_get_catalog_items
 from lib.commands.client.get_title_data import get_title_data as client_get_title_data
+from lib.commands.endpoints import commands_for
 from lib.commands.client.get_account_info import get_account_info as client_get_account_info
 from lib.commands.client.get_leaderboard import get_leaderboard as client_get_leaderboard
 from lib.commands.client.get_player_combined_info import get_player_combined_info as client_get_player_combined_info
@@ -101,6 +102,11 @@ def server():
 
 
 @cli.group()
+def admin():
+    """Commands that call PlayFab's Admin API (title secret key)."""
+
+
+@cli.group()
 def client():
     """Commands that call PlayFab's Client API as a logged-in player.
 
@@ -121,6 +127,9 @@ for cmd in (login_with_custom_id, client_get_leaderboard, client_get_player_prof
             execute_cloud_script, create_player, update_player, get_player_state,
             client_get_title_data, client_get_catalog_items, sessions):
     client.add_command(cmd)
+for family, group in (("Server", server), ("Admin", admin), ("Client", client)):
+    for cmd in commands_for(family):
+        group.add_command(cmd)
 sessions.add_command(list_sessions)
 sessions.add_command(flush_sessions)
 

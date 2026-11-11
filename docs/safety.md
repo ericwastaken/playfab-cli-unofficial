@@ -22,7 +22,8 @@ safe.
     ---
 
     - Start on a **development title** with **test players**.
-    - Run every **READ WRITE** command with **`--dry-run`** first.
+    - Run every **READ WRITE** command with **`--dry-run`** first, then confirm big or
+      destructive ones with **`--yes`**.
     - Use a **dedicated secret key** for pfcli, so you can revoke it on its own.
     - Keep secrets and session files **private** (`chmod 600`).
     - **Flush player sessions** when you're done testing.
@@ -165,6 +166,8 @@ the pfcli folder could be committed, so keep project details in those files. See
 
 - **Labels every command** READ ONLY / READ WRITE / LOCAL WRITE.
 - **Rehearses writes** with `--dry-run`.
+- **Asks for `--yes`** before writes on more than 10 players, on several titles, and before
+  any deletion.
 - **Only sends PlayFab calls it knows**, each marked as a read or a write.
 - **Only runs CloudScript you allow** for each title.
 - **Keeps reads as reads**: `get-player-state` refuses steps that write.

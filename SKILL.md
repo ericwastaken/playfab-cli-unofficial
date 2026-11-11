@@ -28,7 +28,10 @@ If you are asked to change pfcli's **code**, read `AGENT.md` in the repository i
    `[READ WRITE]` or `[LOCAL WRITE]`. You may run READ ONLY commands when asked.
 3. **Before any READ WRITE command**: run it with `--dry-run` first, show the user exactly
    what would be sent (title, player, endpoint, body), and get an explicit yes for that
-   specific action. Approval for one write is not approval for the next.
+   specific action. Approval for one write is not approval for the next. Only add `--yes`
+   (needed for >10 targets, several titles, or any deletion) after the user approved that
+   exact run. Never run a deletion (`delete-player`, `delete-master-player-account`)
+   unless the user named the players and confirmed.
 4. **Prefer development titles and test players.** Ask before touching a production title
    or a real player's account. Logging in (`client login-with-custom-id`,
    `client create-player`) is a write: it can create players and trigger the title's login
@@ -100,6 +103,17 @@ one failing title doesn't stop the others; exit status 1 if any failed).
 | `client update-user-title-display-name ALIAS... -u ID... -n NAME` | READ WRITE | Direct name change (often blocked by title policy: 403) |
 | `client sessions list [VALUE...]` | READ ONLY | Saved sessions (tickets redacted) |
 | `client sessions flush VALUE... \| --title A \| --expired \| --all` | LOCAL WRITE | Remove saved sessions |
+
+**More `server` / `admin` / `client` endpoint commands** (one PlayFab call each; same
+patterns: `ALIAS...`, `-p ID...` or `--input` for Server/Admin, `-u ID...` for Client):
+friends (`get-friends-list`, `add-friend`, `remove-friend`), `update-avatar-url`,
+`admin update-user-title-display-name` (skips the game's name checks), tags
+(`get-player-tags`, `add-player-tag`, `remove-player-tag`), `consume-item`,
+`add-user-virtual-currency` / `subtract-user-virtual-currency`, `get-catalog-items`,
+`get-leaderboard-around-user` (client: `-around-player`), `get-user-account-info`,
+`get-all-segments`, `get-player-segments`, `admin export-players-in-segment` /
+`get-segment-export`, and deletions `delete-player` / `admin delete-master-player-account`
+(always `--yes`). Run `pfcli server --help`, `pfcli admin --help`, `pfcli client --help`.
 
 Client commands need a saved session from step 1 with the same `-u`; they never log in by
 themselves. Run `pfcli <group> <command> --help` for every option.

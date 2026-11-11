@@ -77,6 +77,7 @@ nav:
       - Several titles at once: guides/several-titles.md
       - Shape the output: guides/output-formats.md
       - Look up many players: guides/bulk-players.md
+      - Manage players (Server and Admin): guides/manage-players.md
       - Act as a player: guides/act-as-a-player.md
       - CloudScript and player sequences: guides/cloudscript-and-sequences.md
   - Reference:

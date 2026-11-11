@@ -63,7 +63,7 @@ endpoints.
   - [Server API](https://learn.microsoft.com/en-us/rest/api/playfab/server/): title secret key
     in the `X-SecretKey` header (`TitleClient`).
   - [Admin API](https://learn.microsoft.com/en-us/rest/api/playfab/admin/): title secret key in
-    `X-SecretKey` (`TitleClient`; no Admin endpoints are registered yet).
+    `X-SecretKey` (`TitleClient`).
   - [Client API](https://learn.microsoft.com/en-us/rest/api/playfab/client/): the player's
     session ticket in `X-Authorization`, obtained from
     [LoginWithCustomID](https://learn.microsoft.com/en-us/rest/api/playfab/client/authentication/login-with-custom-id)
@@ -92,6 +92,46 @@ Endpoints currently registered in `ALLOWED_ENDPOINTS`, with their reference page
 | `Client/GetCatalogItems` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/title-wide-data-management/get-catalog-items) |
 | `Client/UpdateUserTitleDisplayName` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/account-management/update-user-title-display-name) |
 | `Client/ExecuteCloudScript` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/server-side-cloud-script/execute-cloud-script) |
+| `Server/GetFriendsList` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/friend-list-management/get-friends-list) |
+| `Server/AddFriend` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/friend-list-management/add-friend) |
+| `Server/RemoveFriend` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/friend-list-management/remove-friend) |
+| `Server/UpdateAvatarUrl` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/account-management/update-avatar-url) |
+| `Server/AddPlayerTag` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/play-stream/add-player-tag) |
+| `Server/RemovePlayerTag` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/play-stream/remove-player-tag) |
+| `Server/GetPlayerTags` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/play-stream/get-player-tags) |
+| `Server/ConsumeItem` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/player-item-management/consume-item) |
+| `Server/AddUserVirtualCurrency` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/player-item-management/add-user-virtual-currency) |
+| `Server/SubtractUserVirtualCurrency` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/player-item-management/subtract-user-virtual-currency) |
+| `Server/GetCatalogItems` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/title-wide-data-management/get-catalog-items) |
+| `Server/GetLeaderboardAroundUser` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/player-data-management/get-leaderboard-around-user) |
+| `Server/GetUserAccountInfo` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/account-management/get-user-account-info) |
+| `Server/GetAllSegments` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/play-stream/get-all-segments) |
+| `Server/GetPlayerSegments` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/play-stream/get-player-segments) |
+| `Server/DeletePlayer` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/server/account-management/delete-player) |
+| `Admin/UpdateUserTitleDisplayName` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/account-management/update-user-title-display-name) |
+| `Admin/AddPlayerTag` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/add-player-tag) |
+| `Admin/RemovePlayerTag` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/remove-player-tag) |
+| `Admin/GetPlayerTags` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/get-player-tags) |
+| `Admin/AddUserVirtualCurrency` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/player-item-management/add-user-virtual-currency) |
+| `Admin/SubtractUserVirtualCurrency` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/player-item-management/subtract-user-virtual-currency) |
+| `Admin/GetCatalogItems` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/title-wide-data-management/get-catalog-items) |
+| `Admin/GetUserAccountInfo` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/account-management/get-user-account-info) |
+| `Admin/GetAllSegments` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/get-all-segments) |
+| `Admin/GetPlayerSegments` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/get-player-segments) |
+| `Admin/ExportPlayersInSegment` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/export-players-in-segment) |
+| `Admin/GetSegmentExport` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/play-stream/get-segment-export) |
+| `Admin/DeletePlayer` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/account-management/delete-player) |
+| `Admin/DeleteMasterPlayerAccount` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/admin/account-management/delete-master-player-account) |
+| `Client/GetFriendsList` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/friend-list-management/get-friends-list) |
+| `Client/AddFriend` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/friend-list-management/add-friend) |
+| `Client/RemoveFriend` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/friend-list-management/remove-friend) |
+| `Client/UpdateAvatarUrl` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/account-management/update-avatar-url) |
+| `Client/GetPlayerTags` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/play-stream/get-player-tags) |
+| `Client/ConsumeItem` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/player-item-management/consume-item) |
+| `Client/AddUserVirtualCurrency` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/player-item-management/add-user-virtual-currency) |
+| `Client/SubtractUserVirtualCurrency` | write | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/player-item-management/subtract-user-virtual-currency) |
+| `Client/GetLeaderboardAroundPlayer` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/player-data-management/get-leaderboard-around-player) |
+| `Client/GetPlayerSegments` | read | [docs](https://learn.microsoft.com/en-us/rest/api/playfab/client/play-stream/get-player-segments) |
 
 When you register a new endpoint, add it to this table with its reference page. Request
 and response shapes are exactly those in the reference; pfcli does not translate them.
@@ -113,8 +153,9 @@ lib/sessions.py             player session store (chmod 600), expiry, redaction 
 lib/files.py                NAME vs path lookup for formats and templates
 lib/commands/titles.py      local command
 lib/commands/common.py      shared paging/concurrency helpers
-lib/commands/server/*.py    one module per `server` command
-lib/commands/client/*.py    one module per `client` command, plus sessions and sequences
+lib/commands/endpoints.py   table-driven commands for simple flat endpoints (server/admin/client)
+lib/commands/server/*.py    `server` commands with their own logic, one module each
+lib/commands/client/*.py    `client` commands with their own logic, plus sessions and sequences
 output-formats/*.yml        built-in output formats (user-*.yml are local)
 request-templates/*.yml     built-in request templates (user-*.yml are local)
 docs/, mkdocs.yml           user guide (GitHub Pages)
@@ -219,6 +260,15 @@ Please do not open a public issue. Use GitHub's
 for this repository.
 
 ## Adding a command
+
+**Simple flat endpoint** (a player or title plus a few fields, no paging or templates): add an
+`EndpointSpec` to `SPECS` in `lib/commands/endpoints.py` (endpoint, scope `player` / `title` /
+`session` / `session_target`, fields, optional `guard` `"bulk"` or `"always"`) and register the
+endpoint. `build_command()` creates the Click command with the standard options, access tag,
+`--dry-run`, and the `--yes` guard: writes on more than 10 targets or several titles, and every
+`"always"` write (deletions), refuse to run without `--yes`.
+
+**Anything with real logic** (paging, request templates, sequences, sessions handling):
 
 1. Create `lib/commands/<group>/<name>.py` with `@pf_command("<endpoint-in-kebab-case>",
    READ_ONLY | READ_WRITE, ("Family/Endpoint",))`. Commands that call PlayFab take `ALIAS...`

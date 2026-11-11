@@ -131,6 +131,10 @@ new config keys. Before calling a feature finished, re-read all four and check t
   (`data.Error`, or an error-shaped `FunctionResult`); the command treats both as failure.
 - **Access tags.** READ ONLY, READ WRITE (PlayFab writes) or LOCAL WRITE (changes a local
   pfcli file only); the last two get `--dry-run` automatically.
+- **Simple endpoints are table-driven.** Flat calls (player or title plus a few fields) are
+  `EndpointSpec` entries in `lib/commands/endpoints.py`, not separate modules; set `guard`
+  (`bulk` for writes, `always` for deletions). The README endpoint rows and the commands
+  reference rows were generated from `SPECS`; keep them in sync when you add entries.
 - **Command naming.** Commands that call PlayFab go in their API family's group
   (`server`, `client`, later `admin`) and are named after the endpoint in kebab-case.
 - **Client API caution.** A Client login can create players or run the title's login
