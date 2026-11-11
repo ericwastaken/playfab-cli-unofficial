@@ -1,0 +1,9 @@
+# `titles` as a tab-separated table.
+description: Configured titles as TSV
+format: tsv
+fields:
+  alias: alias
+  titleId: titleId
+  key: key
+  host: host
+  description: description

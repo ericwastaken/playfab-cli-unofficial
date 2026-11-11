@@ -1,0 +1,11 @@
+# Every leaderboard entry as one JSON line, flattened out of the paged responses.
+description: One JSON line per leaderboard entry
+format: ndjson
+rows: response.data.Leaderboard
+fields:
+  title: title
+  statistic: request.StatisticName
+  position: row.Position
+  playFabId: row.PlayFabId
+  name: row.DisplayName
+  value: row.StatValue

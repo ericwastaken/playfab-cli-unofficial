@@ -5,6 +5,9 @@ pfcli*.yml
 pfcli*.yaml
 !pfcli-config.example.yml
 !pfcli-secrets.example.yml
+# Output formats: your own are local; only the generic examples are committed
+output-formats/*
+!output-formats/*.example.yml
 # Env files are not used by pfcli; ignored anyway so a stray one never leaks
 .env
 .env.*

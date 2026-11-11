@@ -4,7 +4,8 @@ A single **Click** CLI with subcommands for working with PlayFab titles.
 Titles and hosts come from a YAML config and the secret keys from a YAML secrets file, so
 the same tool works for any studio or game. It calls the PlayFab REST API directly (no
 PlayFab SDK), so every request goes through one gate and every command is tagged
-`READ ONLY` or `READ WRITE`. Runs through **uv** in
+`READ ONLY` or `READ WRITE`. Output is PlayFab's own JSON on stdout by default, and any
+command's output can be reshaped with an output format file. Runs through **uv** in
 this folder's own `.venv` (Python 3.12, pinned in `.python-version`); the global Python is
 never touched.
 
@@ -17,10 +18,12 @@ pfcli.py                    entry point (Click group, global options)
 lib/config.py               loads and validates the YAML config and secrets
 lib/client.py               secret-key client (Server/Admin) + ALLOWED_ENDPOINTS registry
 lib/pfcommand.py            pf_command: access tag, endpoint check, --dry-run
-lib/commands/*.py           one module per command
+lib/output.py               stdout output: envelopes, --raw, output formats
+lib/commands/*.py           top-level commands (titles)
+lib/commands/server/*.py    `server` group commands, one module per command
 pfcli-config.example.yml    config template   (committed)
 pfcli-secrets.example.yml   secrets template  (committed)
-output/                     default output folder (gitignored)
+output-formats/             your output formats (gitignored) + committed *.example.yml
 ```
 
 ## Quick start
@@ -29,7 +32,7 @@ output/                     default output folder (gitignored)
 cp pfcli-config.example.yml  pfcli-config.yml    # 1. describe your titles
 cp pfcli-secrets.example.yml pfcli-secrets.yml   # 2. paste each title's secret key
 chmod 600 pfcli-secrets.yml
-uv sync                                          # 3. create .venv (click, pyyaml)
+uv sync                                          # 3. create .venv (click, jmespath, pyyaml)
 uv run pfcli.py titles                           # 4. every title should show "key set"
 ```
 
@@ -113,11 +116,6 @@ Full example (`pfcli-config.example.yml` with its comments removed):
 ```yaml
 defaults:
   host: "https://{title_id}.playfabapi.com"
-  boards:
-    alltime: { statistic: score, depth: 5000 }
-    today:   { statistic: score_daily, depth: 500 }
-  default_name_patterns:
-    - '^player_?\d{5,}$'
 
 titles:
   GAME-PROD:
@@ -127,60 +125,33 @@ titles:
     title_id: ABCD2
     description: Example dev title on a dedicated cluster
     host: "https://{title_id}.example-cluster.playfabapi.com"
-    default_name_patterns: ['^guest\d{5,}$']
 ```
+
+The config only says which titles exist and how to reach them. What to read (statistic
+names, keys) is given on the command line, and how to shape the output is an output
+format (see Output).
 
 ### `defaults` (optional)
 
-Values every title inherits unless the title sets its own.
-
-| Key | Type | Used by | Meaning |
-|---|---|---|---|
-| `host` | string | all API calls | Server API base URL. `{title_id}` is replaced with the title's ID; a trailing `/` is dropped. If unset anywhere, `https://{title_id}.playfabapi.com`. |
-| `boards` | map | `leaderboard-names` | Board label to `{ statistic, depth }`. See below. |
-| `default_name_patterns` | list of regex | `names-report` | Display names matching any pattern are treated as auto-assigned defaults. |
+| Key | Type | Meaning |
+|---|---|---|
+| `host` | string | API base URL. `{title_id}` is replaced with the title's ID; a trailing `/` is dropped. If unset anywhere, `https://{title_id}.playfabapi.com`. |
 
 ### `titles` (required, at least one)
 
 Each key under `titles` is an **alias**: the short name you type on the command line and
-the label used in output file names and CSV rows. Aliases are matched case-insensitively
-(`game-prod` finds `GAME-PROD`); output uses the spelling in the config.
+the `title` value in output. Aliases are matched case-insensitively (`game-prod` finds
+`GAME-PROD`); output uses the spelling in the config.
 
 | Key | Required | Type | Meaning |
 |---|---|---|---|
 | `title_id` | **yes** | string | The PlayFab title ID (Game Manager > title > Settings > General). **Quote it** if it is all digits (`"12345"`); pfcli also coerces it to text. |
 | `description` | no | string | Free text, shown by `titles`. |
 | `host` | no | string | Overrides `defaults.host`. Needed for titles on a dedicated PlayFab cluster, whose API host is not the shared `playfabapi.com` one; the shared host answers `InvalidAPIEndpoint` for them. |
-| `boards` | no | map | Overrides `defaults.boards` **entirely** (not merged): list every board the title should have. |
-| `default_name_patterns` | no | list of regex | Overrides `defaults.default_name_patterns` **entirely**. |
 
-A title missing `title_id`, or a config with no titles, fails on load with
-the file and alias named.
-
-### `boards`
-
-```yaml
-boards:
-  <label>: { statistic: <PlayFab statistic name>, depth: <ranks to pull> }
-```
-
-- `<label>` is yours to choose (`alltime`, `today`, `weekly`, ...). It names the output
-  file (`<ALIAS>-<label>.json`) and is what `--board` and `--depth` refer to.
-- `statistic` is the legacy leaderboard / statistic name exactly as in Game Manager
-  (Leaderboards (Legacy)). Case-sensitive.
-- `depth` is how many top ranks to pull; omitted means 100. Override per run with
-  `--depth <label>=N`.
-- The **current version** of the statistic is always read, so a daily or hourly statistic
-  gives the current day's or hour's board.
-
-### `default_name_patterns`
-
-- Python regular expressions, matched **case-insensitively** anywhere in the name
-  (`re.search`); anchor with `^...$` to match whole names.
-- Use single quotes in YAML so backslashes survive: `'^player_?\d{5,}$'`.
-- Each title has its own default-name format (separator, language, digit count). Check a
-  sample of `leaderboard-names.csv` and set patterns per title, or defaults will be counted
-  as known-good.
+A title missing `title_id`, or a config with no titles, fails on load with the file and
+alias named. Retired keys (`key_env`, `boards`, `default_name_patterns`) are ignored with a
+warning on stderr.
 
 ## Secrets file reference
 
@@ -205,35 +176,150 @@ titles:
 - **Environment fallback:** a title with no key in the file uses the environment variable
   `PFCLI_SECRET_<TITLE_ID>` (title ID upper-cased), e.g.
   `export PFCLI_SECRET_ABCD1=...`. Useful in CI. The file wins when both are set.
-- A **missing** key makes that title show `key EMPTY` in `titles`; `leaderboard-names`
-  skips the title with a message and exits with status 1.
+- A **missing** key makes that title show `key EMPTY` in `titles`; commands that call
+  PlayFab skip the title with a message on stderr and exit with status 1.
 - **Scope of the key:** a title secret key can call any Server and Admin API on that
   title, including writes. pfcli only calls endpoints registered in `ALLOWED_ENDPOINTS`, but
   the key itself does not limit anything. Treat it as full access.
 
+## Several titles in one command
+
+Commands that call PlayFab take **one or more title aliases**, so one run can cover a whole
+set of titles, for example every region of a game or prod and dev side by side:
+
+```bash
+uv run pfcli.py --config pfcli-config-acme.yml -o leaderboard-names \
+  server get-leaderboard GAME-PROD GAME-DEV GAME-ASIA -s score --max 5000 > names.csv
+```
+
+- **Each title is called with its own settings**: its own host (shared or dedicated
+  cluster) and its own secret key from the secrets file. Mixing titles on different
+  clusters in one run just works.
+- **Titles run in the order given**, one after the other, and their results go to the
+  same stdout stream.
+- **Every record says which title it came from**: the envelope's `title` (the alias) and
+  `titleId`. Output formats and `jq` can use those to label, filter or split results;
+  the example names format puts `title` in the first column and de-duplicates names
+  per title (`unique: [title, name]`).
+- **One title failing does not stop the others**: an unknown alias, a missing key or a
+  PlayFab error is reported on stderr, that title is skipped, the rest still run, and
+  the exit status is 1 so scripts can tell.
+- Aliases are matched case-insensitively; `uv run pfcli.py --config ... titles` lists them.
+
+Split a combined run afterwards, e.g. one file per title:
+
+```bash
+uv run pfcli.py --config pfcli-config-acme.yml -o leaderboard-entries \
+  server get-leaderboard GAME-PROD GAME-DEV -s score --max 1000 \
+  | jq -c 'select(.title == "GAME-DEV")' > dev.ndjson
+```
+
+## Output
+
+pfcli writes **data to stdout** and everything else (logs, progress, warnings, errors,
+dry-run notices) to **stderr**, so output can be piped or redirected with plain shell:
+
+```bash
+uv run pfcli.py ... server get-leaderboard GAME-PROD -s score > board.ndjson
+uv run pfcli.py ... server get-leaderboard GAME-PROD -s score 2> errors.log | jq .
+```
+
+### Default: PlayFab's own responses, one JSON line per call
+
+Each PlayFab call prints one line (NDJSON) holding PlayFab's response untouched, inside a
+small envelope saying which title and request it belongs to:
+
+```json
+{"title": "GAME-PROD", "titleId": "ABCD1", "endpoint": "Server/GetLeaderboard",
+ "request": {"StatisticName": "score", "StartPosition": 0, ...},
+ "response": {"code": 200, "status": "OK", "data": {"Leaderboard": [...], "Version": 3}}}
+```
+
+- A command that makes several calls (pages, several titles) prints several lines.
+- PlayFab errors are printed the same way (`response` is PlayFab's error reply); a message
+  also goes to stderr and the exit status is 1.
+- A write sent with `--dry-run` prints its envelope with `"dryRun": true` and
+  `"response": null`.
+- `--raw` prints only `response`, exactly as PlayFab returned it.
+- Commands that make no PlayFab call (`titles`) print one JSON line per record.
+
+### `--output-format`: reshape any command's output
+
+`--output-format NAME|PATH` (`-o`, a global option, before the command) passes every
+record through an **output format file** instead. It works with every command; formats
+are not tied to one. A bare `NAME` is looked up as `output-formats/NAME.yml`, then
+`output-formats/NAME.example.yml`, next to the config file and then in this tool's folder;
+anything with a `/` or ending in `.yml` is used as a path.
+
+`output-formats/` holds your formats and is **gitignored**, except the committed generic
+`*.example.yml` ones. Copy an example to `NAME.yml` to customize it.
+
+```yaml
+# output-formats/leaderboard-names.yml
+description: Unique display names per title
+format: csv                        # ndjson (default) | json | yaml | csv | tsv | text
+rows: response.data.Leaderboard    # optional: one output row per item of this list
+fields:                            # optional: output columns (needed for csv/tsv/text)
+  title: title                     #   envelope values by name
+  position: row.Position           #   `row` is the current item from `rows`
+  name: row.DisplayName
+drop_empty: [name]                 # optional: drop rows where these fields are empty
+exclude:                           # optional: drop rows where a field matches a regex
+  name: ['^player_?\d{5,}$']
+unique: [title, name]              # optional: keep only the first row per combination
+```
+
+| Key | Meaning |
+|---|---|
+| `format` | `ndjson` one JSON object per line (default); `json` / `yaml` one list, written at the end; `csv` / `tsv` with a header row; `text` tab-separated values, no header. |
+| `rows` | [JMESPath](https://jmespath.org/) expression evaluated on each record. A list gives one output row per item, a single value one row, null none. Omit it for one row per record. |
+| `fields` | Output name to JMESPath expression. Evaluated on the record plus `row` (the current item). Without `fields`, the item itself (or the record) is printed. Lists and objects in csv/tsv/text cells are written as JSON. |
+| `drop_empty` | Fields that must not be empty (null, `""`, `[]`, `{}`). |
+| `exclude` | Field to list of Python regexes (`re.search`, case-sensitive; add `(?i)` to ignore case). A match drops the row. Use single quotes in YAML so backslashes survive. |
+| `unique` | Fields whose combination may appear only once; the first row wins. |
+| `description` | Free text. |
+
+The format applies to whatever would otherwise be printed: with `--raw`, expressions see
+PlayFab's response instead of the envelope. Unknown keys, bad expressions and bad regexes
+are reported before any call is made.
+
+Committed examples:
+
+| Name | What it prints |
+|---|---|
+| `leaderboard-names` | CSV of unique display names per title from `server get-leaderboard`, with blanks and default-looking names removed. |
+| `leaderboard-entries` | One JSON line per leaderboard entry (title, statistic, position, playFabId, name, value). |
+| `data` | Only the `data` of each PlayFab response. |
+| `titles-table` | `titles` as TSV. |
+
 ## Commands
 
-Global options (before the command): `--config <yml>`, `--secrets <yml>`, `--json` (results
-as JSON on stdout), `--log-level`. Run `uv run pfcli.py <command> --help` for details.
+Global options (before the command): `--config`, `--secrets`, `--output-format`/`-o`,
+`--raw`, `--log-level`. `ALIAS...` means one or more title aliases. Commands that call PlayFab are grouped by PlayFab API family
+(`server ...`; `admin` and `client` groups will follow) and named after the endpoint they
+call. Run `uv run pfcli.py <command> --help` for details.
 
 | Command | Access (PlayFab endpoints) | What it does |
 |---|---|---|
-| `titles` | READ ONLY (none) | Lists the config and secrets files used, then each title's ID, host, boards and whether its key is found (`set (file)`, `set (env)`, `EMPTY`). |
-| `leaderboard-names ALIAS...` | READ ONLY (`Server/GetLeaderboard`) | For each configured board, pulls the top `depth` ranks of the current statistic version with `Server/GetLeaderboard` (`ShowDisplayName`). Writes `<out>/<ALIAS>-<board>.json`. Options: `--board` to pick boards, `--depth BOARD=N` to override depth, `--out` (default `output/<YYMMDD>/`), `--pause`. 100 per page; retries on 429/5xx. |
-| `names-report RAW_DIR` | READ ONLY (none, offline) | From `leaderboard-names` output, writes `leaderboard-names.csv` (title, board, statistic, version, rank, display_name, default_name) and `known-good-names.csv` (unique names per title with boards, best_rank, default_name). Blanks are always removed. Names matching the title's `default_name_patterns` are flagged `default_name=yes` and dropped from known-good unless `--include-defaults` is passed. Uses `--config` for the patterns. Default output is the parent of `RAW_DIR`. |
+| `titles` | READ ONLY (none) | One record per configured title: alias, titleId, host, key (`set (file)`, `set (env)`, `EMPTY`) and description. The config and secrets files used are reported on stderr. |
+| `server get-leaderboard ALIAS... -s STAT` | READ ONLY (`Server/GetLeaderboard`) | Reads a legacy leaderboard (statistic) for **each title given** (see Several titles in one command), paging 100 at a time, with display names. One record per page. Options: `--max N` ranks per title (default 100), `--start N`, `--version N` (default: current), `--pause`. Warns on stderr when a board is empty (PlayFab returns an empty board for a statistic that does not exist). |
 
-Example:
+Examples:
 
 ```bash
+# Raw pages, for jq or later processing
 uv run pfcli.py --config pfcli-config-acme.yml \
-  leaderboard-names GAME-PROD GAME-DEV --out ~/work/names/raw
-uv run pfcli.py --config pfcli-config-acme.yml names-report ~/work/names/raw
+  server get-leaderboard GAME-PROD GAME-DEV -s score --max 5000 > score.ndjson
+
+# Names list as CSV
+uv run pfcli.py --config pfcli-config-acme.yml -o leaderboard-names \
+  server get-leaderboard GAME-PROD GAME-DEV -s score --max 5000 > names.csv
 ```
 
 Notes:
-- A board can return fewer rows than `depth` when fewer players have that statistic.
-- "Known-good" means the name was accepted at the time it was set. A rule added later
-  is not applied retroactively.
+- A board can return fewer rows than `--max` when fewer players have that statistic.
+- The current version of a statistic is read unless `--version` is given, so a daily or
+  hourly statistic gives the current day's or hour's board.
 
 ## Access and safety
 
@@ -270,12 +356,16 @@ Things to keep in mind:
        """One-line summary."""
    ```
    A `READ_WRITE` command gets a `dry_run` argument (from `--dry-run`); pass it to every
-   `call(...)`. `ctx.obj` holds `config` (a `Config`), `json_output` and `root`.
+   `call(...)`. `ctx.obj` is the app: `ctx.obj.config` (a `Config`, loaded on first use),
+   `ctx.obj.emitter`, `ctx.obj.root`. Commands calling an API family go in that family's
+   group (`server`, later `admin` / `client`), named after the endpoint in kebab-case.
 2. Register each new endpoint in `ALLOWED_ENDPOINTS` with its family and `READ`/`WRITE`.
 3. Call PlayFab through `TitleClient(config.title(alias)).call("Server/<Name>", body,
-   dry_run=dry_run)`.
-4. Register the command in `pfcli.py` (`cli.add_command(...)`) and add it to the
-   Commands table above.
+   dry_run=dry_run)`. It returns the envelope with PlayFab's reply (errors included);
+   pass it to `ctx.obj.emitter.emit(...)`, check it with `ok(env)`, and write any
+   message to stderr. Never print data any other way: formats only see emitted records.
+4. Register the command in `pfcli.py` (`cli.add_command(...)` or
+   `server.add_command(...)`) and add it to the Commands table above.
 5. If it needs new config keys, read them in `lib/config.py`, add them to
    `pfcli-config.example.yml`, and document them in the config reference above.
 6. Dependencies: `uv add <package>`, never `pip install`.

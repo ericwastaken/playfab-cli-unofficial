@@ -5,6 +5,7 @@ description = "pfcli: PlayFab command-line utilities."
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.5.1",
+    "jmespath>=1.1.0",
     "pyyaml>=6.0.3",
 ]
 

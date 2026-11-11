@@ -7,17 +7,6 @@ defaults:
   # override this per title (e.g. "https://{title_id}.<cluster>.playfabapi.com").
   host: "https://{title_id}.playfabapi.com"
 
-  # Legacy leaderboards (statistics) pulled by `leaderboard-names`.
-  # board label -> statistic name and how many ranks to pull (current version).
-  boards:
-    alltime: { statistic: score, depth: 5000 }
-    today:   { statistic: score_daily, depth: 500 }
-
-  # Display names matching any of these (case-insensitive) are treated as
-  # auto-assigned defaults and dropped from the known-good list by `names-report`.
-  default_name_patterns:
-    - '^player_?\d{5,}$'
-
 titles:
   # alias: short label used on the command line and in output files
   GAME-PROD:
@@ -27,4 +16,3 @@ titles:
     title_id: ABCD2
     description: Example dev title on a dedicated cluster
     host: "https://{title_id}.example-cluster.playfabapi.com"
-    default_name_patterns: ['^guest\d{5,}$']

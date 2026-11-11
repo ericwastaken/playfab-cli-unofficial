@@ -1,9 +1,8 @@
-"""Loads the YAML config (titles, hosts, boards, default-name patterns) and the YAML
-secrets file (Server API secret keys by title ID)."""
+"""Loads the YAML config (titles and hosts) and the YAML secrets file (secret keys by
+title ID)."""
 import copy
 import logging
 import os
-import re
 from pathlib import Path
 
 import yaml
@@ -11,6 +10,12 @@ import yaml
 logger = logging.getLogger("pfcli")
 
 ENV_PREFIX = "PFCLI_SECRET_"  # fallback: PFCLI_SECRET_<TITLE_ID> in the environment
+
+RETIRED_KEYS = {
+    "key_env": "keys come from the secrets file by title_id",
+    "boards": "pass --statistic to server get-leaderboard",
+    "default_name_patterns": "filter names with an output format's exclude",
+}
 
 
 class ConfigError(RuntimeError):
@@ -63,23 +68,26 @@ class Config:
         self.path = path
         self.secrets = secrets or Secrets(None)
         self.defaults = raw.get("defaults") or {}
+        for old, why in RETIRED_KEYS.items():
+            if old in self.defaults:
+                logger.warning("%s: defaults has '%s', which is no longer used; %s", path, old, why)
         self.titles = raw.get("titles") or {}
         if not self.titles:
             raise ConfigError(f"No titles defined in {path}")
         for alias, t in self.titles.items():
             if not t.get("title_id"):
                 raise ConfigError(f"{path}: title '{alias}' is missing 'title_id'")
-            if "key_env" in t:
-                logger.warning("%s: title '%s' has 'key_env', which is no longer used; "
-                               "keys come from the secrets file by title_id", path, alias)
+            for old, why in RETIRED_KEYS.items():
+                if old in t:
+                    logger.warning("%s: title '%s' has '%s', which is no longer used; %s", path, alias, old, why)
             t["title_id"] = str(t["title_id"])  # YAML reads all-digit IDs as numbers
 
     def aliases(self) -> list[str]:
         return list(self.titles)
 
     def title(self, alias: str) -> dict:
-        """Title settings with defaults applied (host formatted, boards and patterns merged)
-        and its secret key resolved ('key', 'key_source')."""
+        """Title settings with defaults applied (host formatted) and its secret key
+        resolved ('key', 'key_source')."""
         match = {a.lower(): a for a in self.titles}.get(alias.lower())
         if not match:
             raise ConfigError(f"Unknown title '{alias}'. Known: {', '.join(self.titles)}")
@@ -87,8 +95,5 @@ class Config:
         t["alias"] = match
         t["host"] = (t.get("host") or self.defaults.get("host") or "https://{title_id}.playfabapi.com") \
             .format(title_id=t["title_id"]).rstrip("/")
-        t["boards"] = t.get("boards") or copy.deepcopy(self.defaults.get("boards") or {})
-        t["default_name_patterns"] = [re.compile(p, re.IGNORECASE) for p in
-                                      (t.get("default_name_patterns") or self.defaults.get("default_name_patterns") or [])]
         t["key"], t["key_source"] = self.secrets.key_for(t["title_id"])
         return t

@@ -53,32 +53,59 @@ class TitleClient:
                                f"(add it to the secrets file, or set PFCLI_SECRET_{self.title_id.upper()})")
 
     def call(self, endpoint: str, body: dict, dry_run: bool = False) -> dict:
-        """POST to "<Family>/<Endpoint>" and return its "data". With dry_run, a WRITE
-        endpoint is logged and not sent (reads are always sent)."""
+        """POST to "<Family>/<Endpoint>" and return the output envelope:
+        {title, titleId, endpoint, request, response}, where `response` is PlayFab's own
+        reply (success or error) untouched. With dry_run, a WRITE endpoint is not sent:
+        the envelope has "dryRun": true and "response": null. Reads always run.
+        Raises PlayFabError only when no PlayFab reply was received."""
         access = endpoint_access(endpoint)
         family = endpoint.split("/", 1)[0]
         if family not in SECRET_KEY_FAMILIES:
             raise PlayFabError(f"{endpoint}: the {family} API needs a player session, "
                                f"which TitleClient does not support")
+        env = {"title": self.alias, "titleId": self.title_id, "endpoint": endpoint, "request": body}
         if access == WRITE and dry_run:
-            logger.info("DRY RUN %s %s: %s", self.alias, endpoint, json.dumps(body, ensure_ascii=False))
-            return {"dryRun": True, "endpoint": endpoint, "body": body}
+            logger.info("DRY RUN %s %s: not sent", self.alias, endpoint)
+            return {**env, "dryRun": True, "response": None}
+        env["response"] = self._post(endpoint, body)
+        return env
+
+    def _post(self, endpoint: str, body: dict) -> dict:
         req = urllib.request.Request(
             f"{self.host}/{endpoint}",
             data=json.dumps(body).encode(),
             method="POST",
             headers={"Content-Type": "application/json", "X-SecretKey": self.key},
         )
+        last = None
         for attempt in range(5):
             try:
                 with urllib.request.urlopen(req, timeout=60) as r:
-                    return json.load(r)["data"]
+                    return json.load(r)
             except urllib.error.HTTPError as e:
-                data = json.load(e)
+                try:
+                    last = json.load(e)
+                except ValueError:
+                    last = {"code": e.code, "status": e.reason, "error": "NonJsonResponse"}
                 if e.code == 429 or e.code >= 500:
                     wait = 2 ** attempt
                     logger.warning("%s %s: HTTP %s, retrying in %ss", self.alias, endpoint, e.code, wait)
                     time.sleep(wait)
                     continue
-                raise PlayFabError(f"{endpoint}: {data.get('errorMessage') or data}")
-        raise PlayFabError(f"{endpoint}: gave up after 5 attempts")
+                return last
+            except (urllib.error.URLError, TimeoutError) as e:
+                raise PlayFabError(f"{endpoint}: {e}")
+        logger.warning("%s %s: gave up after 5 attempts", self.alias, endpoint)
+        return last
+
+
+def ok(envelope: dict) -> bool:
+    """True when the envelope holds a successful PlayFab reply (or a dry run)."""
+    if envelope.get("dryRun"):
+        return True
+    return (envelope.get("response") or {}).get("code") == 200
+
+
+def error_text(envelope: dict) -> str:
+    r = envelope.get("response") or {}
+    return f"{r.get('code')} {r.get('error') or r.get('status')}: {r.get('errorMessage') or ''}".strip()

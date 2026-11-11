@@ -1,0 +1,15 @@
+# Names list from `server get-leaderboard`: one CSV row per unique (title, name).
+# Copy to leaderboard-names.yml (gitignored) to customize, e.g. the exclude patterns.
+description: Unique display names per title from leaderboard pages
+format: csv
+rows: response.data.Leaderboard        # one output row per leaderboard entry
+fields:
+  title: title                         # from pfcli's envelope
+  statistic: request.StatisticName
+  version: response.data.Version
+  position: row.Position               # 0-based, as PlayFab returns it
+  name: row.DisplayName
+drop_empty: [name]                     # players with no display name
+exclude:
+  name: ['^player_?\d{5,}$']           # auto-assigned default names (adjust per title)
+unique: [title, name]                  # first wins; pages are in rank order, so best rank is kept

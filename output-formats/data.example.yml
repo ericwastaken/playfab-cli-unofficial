@@ -1,0 +1,4 @@
+# Just the "data" part of each PlayFab response, one JSON line per call.
+description: PlayFab response data only
+format: ndjson
+rows: response.data
