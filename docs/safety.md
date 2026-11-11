@@ -179,6 +179,10 @@ the pfcli folder could be committed, so keep project details in those files. See
 - **Keeps your files private** and warns about readable secrets or sessions files.
 - **Talks only to PlayFab**: no telemetry.
 
+## License
+
+pfcli's code is under the **MIT License** and comes with no warranty. See [License](license.md).
+
 ## Report a security problem
 
 Found a vulnerability in pfcli? Please don't open a public issue: use GitHub's

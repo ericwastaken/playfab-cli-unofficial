@@ -55,7 +55,8 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -88,5 +89,6 @@ nav:
       - Files and Git: reference/files-and-git.md
   - Security: safety.md
   - Troubleshooting: troubleshooting.md
+  - License: license.md
 
-copyright: Unofficial tool, not affiliated with Microsoft or Azure PlayFab. Use at your own risk. MIT License.
+copyright: Unofficial tool, not affiliated with Microsoft or Azure PlayFab. Use at your own risk. <a href="https://ericwastaken.github.io/playfab-cli-unofficial/license/">MIT License</a>.
