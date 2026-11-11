@@ -57,7 +57,7 @@ def parse_depths(values):
 def leaderboard_names(ctx, aliases, only_boards, depth_overrides, out, pause):
     """Pull display names from legacy leaderboards (READ-ONLY).
 
-    ALIASES are title aliases from pfcli.yml. Each configured board (statistic +
+    ALIASES are title aliases from the --config file. Each configured board (statistic +
     depth) is pulled with Server/GetLeaderboard, current version, and written to
     <out>/<ALIAS>-<board>.json with alias, title, board, statistic, version,
     pulled_utc and rows [{rank, name}].

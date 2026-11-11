@@ -1,5 +1,6 @@
-# pfcli configuration. Copy to pfcli.yml (gitignored) and edit for your titles.
-# Secret keys never go here: each title names the .env variable that holds its key.
+# pfcli configuration. Copy to pfcli-config.yml, or pfcli-config-<client>.yml (both
+# gitignored), and edit for your titles. Secret keys never go here: they live in the
+# paired pfcli-secrets[-<client>].yml, keyed by title_id.
 
 defaults:
   # Server API host. {title_id} is substituted. Titles on a dedicated cluster
@@ -21,11 +22,9 @@ titles:
   # alias: short label used on the command line and in output files
   GAME-PROD:
     title_id: ABCD1
-    key_env: SERVER_SECRET_KEY_ABCD1
     description: Example production title
   GAME-DEV:
     title_id: ABCD2
-    key_env: SERVER_SECRET_KEY_ABCD2
     description: Example dev title on a dedicated cluster
     host: "https://{title_id}.example-cluster.playfabapi.com"
     default_name_patterns: ['^guest\d{5,}$']

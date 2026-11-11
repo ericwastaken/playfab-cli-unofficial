@@ -5,7 +5,6 @@ request is sent, so no command can write to a title by accident.
 """
 import json
 import logging
-import os
 import time
 import urllib.error
 import urllib.request
@@ -25,9 +24,10 @@ class PlayFabServer:
         self.alias = title["alias"]
         self.title_id = title["title_id"]
         self.host = title["host"]
-        self.key = os.environ.get(title["key_env"], "").strip().strip('"').strip("'")
+        self.key = title["key"]
         if not self.key:
-            raise PlayFabError(f"{title['key_env']} is not set (check the --env secrets file)")
+            raise PlayFabError(f"no secret key for title {self.title_id} "
+                               f"(add it to the secrets file, or set PFCLI_SECRET_{self.title_id.upper()})")
 
     def call(self, api: str, body: dict) -> dict:
         if api not in ALLOWED_READS:

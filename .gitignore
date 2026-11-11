@@ -1,13 +1,14 @@
 # --- Config and secrets: ignore every variant, keep only the committed examples ---
-# Any pfcli*.yml / pfcli*.yaml (pfcli.yml, pfcli-config-<client>.yml, typos, backups)
+# Any pfcli*.yml / pfcli*.yaml (pfcli-config-<client>.yml, pfcli-secrets-<client>.yml,
+# typos, backups)
 pfcli*.yml
 pfcli*.yaml
-!pfcli.example.yml
-# Any env file (.env, .env.local, pfcli-secrets-<client>.env, <anything>.env)
+!pfcli-config.example.yml
+!pfcli-secrets.example.yml
+# Env files are not used by pfcli; ignored anyway so a stray one never leaks
 .env
 .env.*
 *.env
-!.env.example
 
 # --- Local only ---
 HANDOFF*.md

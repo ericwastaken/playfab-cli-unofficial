@@ -1,9 +1,10 @@
 # python-playfab-cli (`pfcli`)
 
 A single **Click** CLI with subcommands for **read-only** work against PlayFab titles.
-Titles, hosts and secret-key names come from a YAML config, and the keys themselves from
-an env file, so the same tool works for any studio or game. Runs through **uv** in this
-folder's own `.venv` (Python 3.12, pinned in `.python-version`); the global Python is
+Titles and hosts come from a YAML config and the secret keys from a YAML secrets file, so
+the same tool works for any studio or game. It calls the PlayFab REST API directly (no
+PlayFab SDK), so every request goes through one read-only gate. Runs through **uv** in
+this folder's own `.venv` (Python 3.12, pinned in `.python-version`); the global Python is
 never touched.
 
 > This tool is not by Microsoft PlayFab, nor is it sanctioned by them.
@@ -11,39 +12,55 @@ never touched.
 ## Layout
 
 ```
-pfcli.py              entry point (Click group, global options)
-lib/config.py         loads and validates the YAML config
-lib/client.py         read-only Server API client (ALLOWED_READS)
-lib/commands/*.py     one module per command
-pfcli.example.yml     config template   (committed)
-.env.example          secrets template  (committed)
-output/               default output folder (gitignored)
+pfcli.py                    entry point (Click group, global options)
+lib/config.py               loads and validates the YAML config and secrets
+lib/client.py               read-only Server API client (ALLOWED_READS)
+lib/commands/*.py           one module per command
+pfcli-config.example.yml    config template   (committed)
+pfcli-secrets.example.yml   secrets template  (committed)
+output/                     default output folder (gitignored)
 ```
 
 ## Quick start
 
 ```bash
-cp pfcli.example.yml pfcli.yml     # 1. describe your titles
-cp .env.example .env               # 2. paste each title's secret key
-chmod 600 .env
-uv sync                            # 3. create .venv (click, python-dotenv, pyyaml)
-uv run pfcli.py titles             # 4. check: every title should show "key set"
+cp pfcli-config.example.yml  pfcli-config.yml    # 1. describe your titles
+cp pfcli-secrets.example.yml pfcli-secrets.yml   # 2. paste each title's secret key
+chmod 600 pfcli-secrets.yml
+uv sync                                          # 3. create .venv (click, pyyaml)
+uv run pfcli.py titles                           # 4. every title should show "key set"
 ```
 
 ## Config and secrets files
 
-pfcli needs two files: a **YAML config** (what titles exist and how to reach them) and a
-**secrets file** (the keys). They are linked by variable name: each title in the config
-names the env variable (`key_env`) that holds its key in the secrets file.
+pfcli needs two YAML files: a **config** (what titles exist and how to reach them) and a
+**secrets file** (the keys). They are linked by **title ID**: the secrets file maps each
+`title_id` from the config to that title's Server API secret key.
 
 | | Config | Secrets |
 |---|---|---|
-| Committed template | `pfcli.example.yml` | `.env.example` |
-| Default file (no flag) | `pfcli.yml` | `.env` |
-| Per-client file | `pfcli-config-<client>.yml` | `pfcli-secrets-<client>.env` |
-| Flag | `--config <path>` | `--env <path>` |
-| Gitignored | every `pfcli*.yml` / `pfcli*.yaml` except the example | every `.env`, `.env.*`, `*.env` except the example |
-| Contains secrets? | **No.** Never put a key in YAML. | **Yes.** `chmod 600`, never commit or paste. |
+| Committed template | `pfcli-config.example.yml` | `pfcli-secrets.example.yml` |
+| Default file (no flag) | `pfcli-config.yml` | `pfcli-secrets.yml` |
+| Per-client file | `pfcli-config-<client>.yml` | `pfcli-secrets-<client>.yml` |
+| Flag | `--config <path>` | `--secrets <path>` (usually not needed, see pairing) |
+| Gitignored | yes, by pattern (below) | yes, by pattern (below) |
+| Contains secrets? | **No.** Never put a key in the config. | **Yes.** `chmod 600`, never commit or paste. |
+
+### Pairing
+
+Without `--secrets`, pfcli looks next to the config for its partner, swapping
+`pfcli-config` for `pfcli-secrets` in the file name:
+
+| `--config` | Secrets file used |
+|---|---|
+| (default) `pfcli-config.yml` | `pfcli-secrets.yml` |
+| `pfcli-config-acme.yml` | `pfcli-secrets-acme.yml` |
+| `clients/pfcli-config-acme.yml` | `clients/pfcli-secrets-acme.yml` |
+| any other name | none (environment only) unless `--secrets` is given |
+
+If the paired file does not exist, keys come only from the environment (see the secrets
+reference). An explicit `--secrets` that does not exist is an error. `uv run pfcli.py
+titles` prints which config and secrets file it used.
 
 ### What git ignores (and keeps)
 
@@ -53,45 +70,43 @@ the two templates, so a new client file is safe without editing `.gitignore`:
 ```gitignore
 pfcli*.yml
 pfcli*.yaml
-!pfcli.example.yml
+!pfcli-config.example.yml
+!pfcli-secrets.example.yml
 .env
 .env.*
 *.env
-!.env.example
 ```
 
 | File | In git? |
 |---|---|
-| `pfcli.example.yml`, `.env.example` | **yes** (templates, no real values) |
-| `pfcli.yml`, `pfcli-config-<client>.yml`, any other `pfcli*.yml` / `.yaml` | no |
-| `.env`, `.env.local`, `pfcli-secrets-<client>.env`, any other `*.env` | no |
+| `pfcli-config.example.yml`, `pfcli-secrets.example.yml` | **yes** (templates, no real values) |
+| `pfcli-config.yml`, `pfcli-secrets.yml`, `pfcli-*-<client>.yml`, any other `pfcli*.yml` / `.yaml` | no |
+| `.env`, `*.env` (pfcli does not use them; ignored so a stray one never leaks) | no |
 
-The rule to follow: **name config files `pfcli…yml` and secrets files `…env`**, and they
-stay out of git automatically. Check a name with `git check-ignore -v <file>`. Keep real
-title IDs, hosts and statistic names out of the templates; they are committed.
+The rule to follow: **every config and secrets file name starts with `pfcli` and ends in
+`.yml`**, and it stays out of git automatically. Check a name with
+`git check-ignore -v <file>`. Keep real title IDs, hosts and statistic names out of the
+templates; they are committed.
 
 ### One pair per client
 
-To keep clients apart, give each its own pair and pass both explicitly:
-
 ```bash
-cp pfcli.example.yml pfcli-config-acme.yml
-cp .env.example      pfcli-secrets-acme.env && chmod 600 pfcli-secrets-acme.env
-uv run pfcli.py --config pfcli-config-acme.yml --env pfcli-secrets-acme.env titles
+cp pfcli-config.example.yml  pfcli-config-acme.yml
+cp pfcli-secrets.example.yml pfcli-secrets-acme.yml && chmod 600 pfcli-secrets-acme.yml
+uv run pfcli.py --config pfcli-config-acme.yml titles     # pairs with pfcli-secrets-acme.yml
 ```
 
 Resolution rules:
 
-- **Defaults** (`pfcli.yml`, `.env`) are looked up in **this tool's folder**, wherever you
-  run the command from.
-- **Explicit paths** are relative to your current directory, or absolute.
-- A config that does not exist is always an error. An explicit `--env` that does not exist
-  is an error; a missing default `.env` is allowed (keys then come only from your shell
-  environment, see below).
+- **Defaults** (`pfcli-config.yml` and its pair) are looked up in **this tool's folder**,
+  wherever you run the command from.
+- **Explicit paths** are relative to your current directory, or absolute. A paired secrets
+  file is looked up in the same folder as the config.
+- A config that does not exist is always an error.
 
 ## YAML config reference
 
-Full example (`pfcli.example.yml` with its comments removed):
+Full example (`pfcli-config.example.yml` with its comments removed):
 
 ```yaml
 defaults:
@@ -105,11 +120,9 @@ defaults:
 titles:
   GAME-PROD:
     title_id: ABCD1
-    key_env: SERVER_SECRET_KEY_ABCD1
     description: Example production title
   GAME-DEV:
     title_id: ABCD2
-    key_env: SERVER_SECRET_KEY_ABCD2
     description: Example dev title on a dedicated cluster
     host: "https://{title_id}.example-cluster.playfabapi.com"
     default_name_patterns: ['^guest\d{5,}$']
@@ -134,13 +147,12 @@ the label used in output file names and CSV rows. Aliases are matched case-insen
 | Key | Required | Type | Meaning |
 |---|---|---|---|
 | `title_id` | **yes** | string | The PlayFab title ID (Game Manager > title > Settings > General). **Quote it** if it is all digits (`"12345"`); pfcli also coerces it to text. |
-| `key_env` | **yes** | string | Name of the variable in the secrets file that holds this title's Server API secret key, e.g. `SERVER_SECRET_KEY_ABCD1`. |
 | `description` | no | string | Free text, shown by `titles`. |
 | `host` | no | string | Overrides `defaults.host`. Needed for titles on a dedicated PlayFab cluster, whose API host is not the shared `playfabapi.com` one; the shared host answers `InvalidAPIEndpoint` for them. |
 | `boards` | no | map | Overrides `defaults.boards` **entirely** (not merged): list every board the title should have. |
 | `default_name_patterns` | no | list of regex | Overrides `defaults.default_name_patterns` **entirely**. |
 
-A title missing `title_id` or `key_env`, or a config with no titles, fails on load with
+A title missing `title_id`, or a config with no titles, fails on load with
 the file and alias named.
 
 ### `boards`
@@ -170,49 +182,48 @@ boards:
 
 ## Secrets file reference
 
-A plain `KEY=value` file read with python-dotenv. Template (`.env.example`):
+A YAML file mapping title IDs to Server API secret keys. Template
+(`pfcli-secrets.example.yml`):
 
-```bash
-# PlayFab Server API secret keys. Copy to .env, or to pfcli-secrets-<client>.env
-# (both gitignored), chmod 600, and fill in.
-# Game Manager > <title> > Settings > Secret Keys > Show.
-# Variable names must match each title's key_env in the config.
-SERVER_SECRET_KEY_ABCD1=
-SERVER_SECRET_KEY_ABCD2=
+```yaml
+titles:
+  ABCD1: ""
+  ABCD2: ""
 ```
 
-- **One line per title**, the variable name equal to that title's `key_env`. Variable names
-  are your choice; `SERVER_SECRET_KEY_<TITLEID>` keeps them unambiguous.
+- **One entry per title** under `titles`: the key is the config's `title_id`, the value is
+  that title's secret key. Title IDs match case-insensitively. Quote all-digit IDs.
 - **Where the key comes from:** Game Manager > title > **Settings > Secret Keys** > **Show**
   on an active key. Prefer a dedicated key per tool or person so it can be revoked alone.
-- **Format:** the key as-is after `=`. Quotes are optional and stripped. Lines starting with
-  `#` are comments. No spaces around `=`.
-- **Permissions:** `chmod 600` the file. Never commit it, paste it into chat or tickets, or
-  print it; `uv run pfcli.py titles` reports only `set` / `EMPTY`.
-- **Precedence:** values in the secrets file override variables of the same name already
-  set in your shell. If no secrets file is loaded (default `.env` absent), pfcli uses
-  whatever is in the shell environment, so `export SERVER_SECRET_KEY_ABCD1=...` also works.
-- An **empty or missing** variable makes that title show `key EMPTY` in `titles`;
-  `leaderboard-names` skips the title with a message and exits with status 1.
+- **Format:** quote the key (`"..."`) so YAML keeps it as text. Empty values count as
+  missing. One secrets file can hold keys for titles used by several configs.
+- **Permissions:** `chmod 600` the file; pfcli warns on stderr when other users can read
+  it. Never commit it, paste it into chat or tickets, or print it; `uv run pfcli.py titles`
+  reports only `set (file)`, `set (env)` or `EMPTY`.
+- **Environment fallback:** a title with no key in the file uses the environment variable
+  `PFCLI_SECRET_<TITLE_ID>` (title ID upper-cased), e.g.
+  `export PFCLI_SECRET_ABCD1=...`. Useful in CI. The file wins when both are set.
+- A **missing** key makes that title show `key EMPTY` in `titles`; `leaderboard-names`
+  skips the title with a message and exits with status 1.
 - **Scope of the key:** a title secret key can call any Server and Admin API on that
   title, including writes. pfcli itself only sends the read endpoints in `ALLOWED_READS`,
   but the key does not enforce that. Treat it as full access.
 
 ## Commands
 
-Global options (before the command): `--config <yml>`, `--env <file>`, `--json` (results
+Global options (before the command): `--config <yml>`, `--secrets <yml>`, `--json` (results
 as JSON on stdout), `--log-level`. Run `uv run pfcli.py <command> --help` for details.
 
 | Command | Calls PlayFab? | What it does |
 |---|---|---|
-| `titles` | no | Lists configured titles, hosts, boards and whether each key is set. |
+| `titles` | no | Lists the config and secrets files used, then each title's ID, host, boards and whether its key is found (`set (file)`, `set (env)`, `EMPTY`). |
 | `leaderboard-names ALIAS...` | read-only | For each configured board, pulls the top `depth` ranks of the current statistic version with `Server/GetLeaderboard` (`ShowDisplayName`). Writes `<out>/<ALIAS>-<board>.json`. Options: `--board` to pick boards, `--depth BOARD=N` to override depth, `--out` (default `output/<YYMMDD>/`), `--pause`. 100 per page; retries on 429/5xx. |
 | `names-report RAW_DIR` | no | From `leaderboard-names` output, writes `leaderboard-names.csv` (title, board, statistic, version, rank, display_name, default_name) and `known-good-names.csv` (unique names per title with boards, best_rank, default_name). Blanks are always removed. Names matching the title's `default_name_patterns` are flagged `default_name=yes` and dropped from known-good unless `--include-defaults` is passed. Uses `--config` for the patterns. Default output is the parent of `RAW_DIR`. |
 
 Example:
 
 ```bash
-uv run pfcli.py --config pfcli-config-acme.yml --env pfcli-secrets-acme.env \
+uv run pfcli.py --config pfcli-config-acme.yml \
   leaderboard-names GAME-PROD GAME-DEV --out ~/work/names/raw
 uv run pfcli.py --config pfcli-config-acme.yml names-report ~/work/names/raw
 ```
@@ -236,5 +247,5 @@ pulls: a client login can create players or trigger login CloudScript that write
    Add new read endpoints to `ALLOWED_READS`; never add a write endpoint.
 3. Register it in `pfcli.py` (`cli.add_command(...)`) and add it to the table above.
 4. If it needs new config keys, read them in `lib/config.py`, add them to
-   `pfcli.example.yml`, and document them in the config reference above.
+   `pfcli-config.example.yml`, and document them in the config reference above.
 5. Dependencies: `uv add <package>`, never `pip install`.
