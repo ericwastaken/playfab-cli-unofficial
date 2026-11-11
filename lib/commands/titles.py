@@ -2,8 +2,10 @@ import json
 
 import click
 
+from ..pfcommand import READ_ONLY, pf_command
 
-@click.command("titles")
+
+@pf_command("titles", READ_ONLY)
 @click.pass_context
 def titles(ctx):
     """List configured titles and whether each secret key is found (never prints keys)."""

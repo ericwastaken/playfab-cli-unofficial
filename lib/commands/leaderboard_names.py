@@ -5,18 +5,19 @@ from pathlib import Path
 
 import click
 
-from ..client import PlayFabError, PlayFabServer
+from ..client import PlayFabError, TitleClient
 from ..config import ConfigError
+from ..pfcommand import READ_ONLY, pf_command
 
 logger = logging.getLogger("pfcli")
 
 PAGE = 100  # PlayFab's maximum MaxResultsCount for GetLeaderboard
 
 
-def pull_board(server: PlayFabServer, statistic: str, want: int, pause: float):
+def pull_board(server: TitleClient, statistic: str, want: int, pause: float):
     rows, version, start = [], None, 0
     while start < want:
-        data = server.call("GetLeaderboard", {
+        data = server.call("Server/GetLeaderboard", {
             "StatisticName": statistic,
             "StartPosition": start,
             "MaxResultsCount": PAGE,
@@ -45,7 +46,7 @@ def parse_depths(values):
     return depths
 
 
-@click.command("leaderboard-names")
+@pf_command("leaderboard-names", READ_ONLY, ("Server/GetLeaderboard",))
 @click.argument("aliases", nargs=-1, required=True)
 @click.option("--board", "only_boards", multiple=True, help="Board label(s) from the config to pull. Default: all.")
 @click.option("--depth", "depth_overrides", multiple=True, metavar="BOARD=N",
@@ -55,7 +56,7 @@ def parse_depths(values):
 @click.option("--pause", default=0.2, show_default=True, help="Seconds between pages.")
 @click.pass_context
 def leaderboard_names(ctx, aliases, only_boards, depth_overrides, out, pause):
-    """Pull display names from legacy leaderboards (READ-ONLY).
+    """Pull display names from legacy leaderboards.
 
     ALIASES are title aliases from the --config file. Each configured board (statistic +
     depth) is pulled with Server/GetLeaderboard, current version, and written to
@@ -70,7 +71,7 @@ def leaderboard_names(ctx, aliases, only_boards, depth_overrides, out, pause):
     for alias in aliases:
         try:
             title = cfg.title(alias)
-            server = PlayFabServer(title)
+            server = TitleClient(title)
         except (ConfigError, PlayFabError) as e:
             click.echo(f"{alias}: {e}; skipped", err=True)
             failed = True

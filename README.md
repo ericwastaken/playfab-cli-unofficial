@@ -3,7 +3,8 @@
 A single **Click** CLI with subcommands for working with PlayFab titles.
 Titles and hosts come from a YAML config and the secret keys from a YAML secrets file, so
 the same tool works for any studio or game. It calls the PlayFab REST API directly (no
-PlayFab SDK), so every request goes through one gate with an endpoint allow list. Runs through **uv** in
+PlayFab SDK), so every request goes through one gate and every command is tagged
+`READ ONLY` or `READ WRITE`. Runs through **uv** in
 this folder's own `.venv` (Python 3.12, pinned in `.python-version`); the global Python is
 never touched.
 
@@ -14,7 +15,8 @@ never touched.
 ```
 pfcli.py                    entry point (Click group, global options)
 lib/config.py               loads and validates the YAML config and secrets
-lib/client.py               Server API client with an endpoint allow list (ALLOWED_READS)
+lib/client.py               secret-key client (Server/Admin) + ALLOWED_ENDPOINTS registry
+lib/pfcommand.py            pf_command: access tag, endpoint check, --dry-run
 lib/commands/*.py           one module per command
 pfcli-config.example.yml    config template   (committed)
 pfcli-secrets.example.yml   secrets template  (committed)
@@ -206,19 +208,19 @@ titles:
 - A **missing** key makes that title show `key EMPTY` in `titles`; `leaderboard-names`
   skips the title with a message and exits with status 1.
 - **Scope of the key:** a title secret key can call any Server and Admin API on that
-  title, including writes. pfcli only sends the endpoints in `ALLOWED_READS`, but the key
-  does not enforce that. Treat it as full access.
+  title, including writes. pfcli only calls endpoints registered in `ALLOWED_ENDPOINTS`, but
+  the key itself does not limit anything. Treat it as full access.
 
 ## Commands
 
 Global options (before the command): `--config <yml>`, `--secrets <yml>`, `--json` (results
 as JSON on stdout), `--log-level`. Run `uv run pfcli.py <command> --help` for details.
 
-| Command | Calls PlayFab? | What it does |
+| Command | Access (PlayFab endpoints) | What it does |
 |---|---|---|
-| `titles` | no | Lists the config and secrets files used, then each title's ID, host, boards and whether its key is found (`set (file)`, `set (env)`, `EMPTY`). |
-| `leaderboard-names ALIAS...` | yes, reads only | For each configured board, pulls the top `depth` ranks of the current statistic version with `Server/GetLeaderboard` (`ShowDisplayName`). Writes `<out>/<ALIAS>-<board>.json`. Options: `--board` to pick boards, `--depth BOARD=N` to override depth, `--out` (default `output/<YYMMDD>/`), `--pause`. 100 per page; retries on 429/5xx. |
-| `names-report RAW_DIR` | no | From `leaderboard-names` output, writes `leaderboard-names.csv` (title, board, statistic, version, rank, display_name, default_name) and `known-good-names.csv` (unique names per title with boards, best_rank, default_name). Blanks are always removed. Names matching the title's `default_name_patterns` are flagged `default_name=yes` and dropped from known-good unless `--include-defaults` is passed. Uses `--config` for the patterns. Default output is the parent of `RAW_DIR`. |
+| `titles` | READ ONLY (none) | Lists the config and secrets files used, then each title's ID, host, boards and whether its key is found (`set (file)`, `set (env)`, `EMPTY`). |
+| `leaderboard-names ALIAS...` | READ ONLY (`Server/GetLeaderboard`) | For each configured board, pulls the top `depth` ranks of the current statistic version with `Server/GetLeaderboard` (`ShowDisplayName`). Writes `<out>/<ALIAS>-<board>.json`. Options: `--board` to pick boards, `--depth BOARD=N` to override depth, `--out` (default `output/<YYMMDD>/`), `--pause`. 100 per page; retries on 429/5xx. |
+| `names-report RAW_DIR` | READ ONLY (none, offline) | From `leaderboard-names` output, writes `leaderboard-names.csv` (title, board, statistic, version, rank, display_name, default_name) and `known-good-names.csv` (unique names per title with boards, best_rank, default_name). Blanks are always removed. Names matching the title's `default_name_patterns` are flagged `default_name=yes` and dropped from known-good unless `--include-defaults` is passed. Uses `--config` for the patterns. Default output is the parent of `RAW_DIR`. |
 
 Example:
 
@@ -233,27 +235,47 @@ Notes:
 - "Known-good" means the name was accepted at the time it was set. A rule added later
   is not applied retroactively.
 
-## Safety
+## Access and safety
 
-Every PlayFab request goes through `PlayFabServer.call()` in `lib/client.py`, which only
-sends endpoints listed in `ALLOWED_READS`; anything else raises before a request is made.
-Today that list holds only read endpoints, so no current command changes anything on a
-title. Any new endpoint has to be added to the list on purpose.
+pfcli is **not** read-only by design. What a command can do on a title is decided by the
+credentials you give it (a title secret key has full Server and Admin access); pfcli's
+job is to make each command's effect obvious:
 
-Things to weigh before adding a command that changes data or logs in as a player:
+- **Every command is tagged** `READ ONLY` or `READ WRITE`, shown in `pfcli --help` and at
+  the top of the command's own `--help`, together with the PlayFab endpoints it calls.
+- **Endpoints are named by API family**, as in PlayFab's REST API: `Server/...`,
+  `Admin/...`, `Client/...`. Each is registered in `ALLOWED_ENDPOINTS` (`lib/client.py`)
+  as `read` or `write`; an unregistered endpoint raises before any request is sent.
+- **Every `READ WRITE` command has `--dry-run`**: write requests are printed, not sent;
+  reads still run so the output shows what would change.
+- Declarations are checked when pfcli starts: a `READ ONLY` command that lists a write
+  endpoint, or a `READ WRITE` command with none, fails immediately.
 
-- A title secret key has full Server and Admin access, so a mistake in a write command
-  hits live data directly.
-- A Client API login (e.g. `LoginWithCustomID`) can create players or trigger the title's
-  login CloudScript, which can write data, even when the command itself only reads.
+Things to keep in mind:
+
+- A title secret key reaches live data directly; try a write with `--dry-run` first.
+- `Client/...` endpoints need a player session, not the secret key. A Client login (e.g.
+  `LoginWithCustomID`) can create players or trigger the title's login CloudScript,
+  which can write data, even when the command itself only reads. `TitleClient` does not
+  support the Client API yet.
 
 ## Adding a command
 
-1. New module in `lib/commands/`, a `@click.command("name")` with `@click.pass_context`.
-   `ctx.obj` holds `config` (a `Config`), `json_output` and `root`.
-2. Call PlayFab through `PlayFabServer(config.title(alias)).call("<ReadApi>", body)`.
-   Add each new endpoint to `ALLOWED_READS` (see Safety before adding one that writes).
-3. Register it in `pfcli.py` (`cli.add_command(...)`) and add it to the table above.
-4. If it needs new config keys, read them in `lib/config.py`, add them to
+1. New module in `lib/commands/`. Declare it with `pf_command` (`lib/pfcommand.py`)
+   instead of `click.command`, naming its access and every endpoint it calls:
+   ```python
+   @pf_command("my-command", READ_ONLY, ("Server/GetTitleData",))
+   @click.pass_context
+   def my_command(ctx, ...):
+       """One-line summary."""
+   ```
+   A `READ_WRITE` command gets a `dry_run` argument (from `--dry-run`); pass it to every
+   `call(...)`. `ctx.obj` holds `config` (a `Config`), `json_output` and `root`.
+2. Register each new endpoint in `ALLOWED_ENDPOINTS` with its family and `READ`/`WRITE`.
+3. Call PlayFab through `TitleClient(config.title(alias)).call("Server/<Name>", body,
+   dry_run=dry_run)`.
+4. Register the command in `pfcli.py` (`cli.add_command(...)`) and add it to the
+   Commands table above.
+5. If it needs new config keys, read them in `lib/config.py`, add them to
    `pfcli-config.example.yml`, and document them in the config reference above.
-5. Dependencies: `uv add <package>`, never `pip install`.
+6. Dependencies: `uv add <package>`, never `pip install`.

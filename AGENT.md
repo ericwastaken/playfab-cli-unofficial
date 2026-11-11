@@ -4,8 +4,9 @@ Describes the **current** state; correct it rather than appending history.
 
 ## What this is
 
-`pfcli`, Eric's generic PlayFab CLI (all current commands only read). One Click entry point (`pfcli.py`)
-with a module per command in `lib/commands/`. It calls the PlayFab REST API directly
+`pfcli`, Eric's generic PlayFab CLI (read and write; each command is tagged). One Click
+entry point (`pfcli.py`) with a module per command in `lib/commands/`. It calls the
+PlayFab REST API directly
 (urllib in `lib/client.py`); do not add the PlayFab SDK. Titles and settings live in a
 YAML config, secret keys in a YAML secrets file keyed by title ID. Defaults are
 `pfcli-config.yml` / `pfcli-secrets.yml`; per client, `pfcli-config-<client>.yml` /
@@ -27,11 +28,13 @@ in this same `projects/ericwastaken/` folder). Fold them in as commands, not sid
 - **Ignore by pattern.** `.gitignore` ignores every `pfcli*.yml|yaml` (and any `.env`
   variant), re-including only the two `*.example.yml` templates. Keep new config/secrets
   names starting with `pfcli` and ending `.yml`; do not add per-file ignore lines.
-- **Read-only is not decided.** Today `lib/client.py` only sends endpoints in
-  `ALLOWED_READS`, and every command only reads. Whether pfcli stays read-only is Eric's
-  open decision: don't treat it as a rule, and don't add writes or Client API logins
-  without asking him. When it comes up, note that a Client login can create players or
-  run the title's login CloudScript, which writes.
+- **Not read-only; credentials decide.** pfcli may read and write; what it can do is
+  governed by the credentials supplied. Every command uses `pf_command` with
+  `READ ONLY` or `READ WRITE` and its endpoints; every `READ WRITE` command gets
+  `--dry-run` (pass `dry_run` to each `call`). Register endpoints in `ALLOWED_ENDPOINTS`
+  as `<Family>/<Name>` (Server/Admin/Client, as PlayFab names them) with READ/WRITE.
+- **Client API caution.** A Client login can create players or run the title's login
+  CloudScript, which writes; say so when a command would use one.
 - **uv only.** `uv sync`, `uv run pfcli.py ...`, `uv add <pkg>`. Never `pip install`
   into the global Python.
 - **Secrets.** Never print a key; report "set/EMPTY" (the `titles` command) or at most the

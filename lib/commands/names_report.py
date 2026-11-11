@@ -5,9 +5,10 @@ from pathlib import Path
 import click
 
 from ..config import ConfigError
+from ..pfcommand import READ_ONLY, pf_command
 
 
-@click.command("names-report")
+@pf_command("names-report", READ_ONLY)
 @click.argument("raw_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--out", type=click.Path(file_okay=False, path_type=Path), default=None,
               help="Output folder. Default: the parent of RAW_DIR.")
@@ -16,7 +17,7 @@ from ..config import ConfigError
                    "(flagged default_name=yes) instead of dropping them.")
 @click.pass_context
 def names_report(ctx, raw_dir, out, include_defaults):
-    """Build CSVs from leaderboard-names output (offline, no PlayFab calls).
+    """Build CSVs from leaderboard-names output (offline).
 
     Reads RAW_DIR/<ALIAS>-<board>.json and writes:
 
