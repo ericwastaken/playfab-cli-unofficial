@@ -1,0 +1,19 @@
+# --- Config and secrets: ignore every variant, keep only the committed examples ---
+# Any pfcli*.yml / pfcli*.yaml (pfcli.yml, pfcli-config-<client>.yml, typos, backups)
+pfcli*.yml
+pfcli*.yaml
+!pfcli.example.yml
+# Any env file (.env, .env.local, pfcli-secrets-<client>.env, <anything>.env)
+.env
+.env.*
+*.env
+!.env.example
+
+# --- Local only ---
+HANDOFF*.md
+output/
+
+# --- Tooling ---
+.venv/
+__pycache__/
+.idea/
