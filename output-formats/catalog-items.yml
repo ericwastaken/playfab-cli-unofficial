@@ -1,0 +1,11 @@
+# `client get-catalog-items` as one CSV row per catalog item.
+description: Catalog items as CSV
+format: csv
+rows: response.data.Catalog
+fields:
+  title: title
+  itemId: row.ItemId
+  itemClass: row.ItemClass
+  displayName: row.DisplayName
+  catalogVersion: row.CatalogVersion
+  virtualCurrencyPrices: row.VirtualCurrencyPrices

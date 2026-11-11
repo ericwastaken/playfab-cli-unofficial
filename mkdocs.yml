@@ -1,0 +1,91 @@
+site_name: pfcli (unofficial PlayFab CLI)
+site_description: An unofficial command-line tool for Microsoft PlayFab titles. Read leaderboards, title data and players, act as a player, run CloudScript, and reshape the output.
+site_url: https://ericwastaken.github.io/playfab-cli-unofficial/
+repo_url: https://github.com/ericwastaken/playfab-cli-unofficial
+repo_name: ericwastaken/playfab-cli-unofficial
+edit_uri: edit/main/docs/
+site_dir: site
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/pfcli-mark.svg
+  favicon: assets/pfcli-mark.svg
+  features:
+    - content.action.edit
+    - content.code.copy
+    - content.code.select
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Use with an AI agent: agents.md
+  - Install: install.md
+  - Getting started:
+      - Set up your titles: getting-started/setup.md
+      - Your first commands: getting-started/first-commands.md
+  - Guides:
+      - Several titles at once: guides/several-titles.md
+      - Shape the output: guides/output-formats.md
+      - Look up many players: guides/bulk-players.md
+      - Act as a player: guides/act-as-a-player.md
+      - CloudScript and player sequences: guides/cloudscript-and-sequences.md
+  - Reference:
+      - Commands: reference/commands.md
+      - Config and secrets files: reference/configuration.md
+      - Output records: reference/output.md
+      - Placeholders and --var: reference/placeholders.md
+      - Files and Git: reference/files-and-git.md
+  - Security: safety.md
+  - Troubleshooting: troubleshooting.md
+
+copyright: Unofficial tool, not affiliated with Microsoft or Azure PlayFab. Use at your own risk. MIT License.

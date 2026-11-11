@@ -20,14 +20,60 @@ Eric intends this to become the single CLI for his other PlayFab tools over time
 (`python-playfab-retrieve-player`, `python-playfab-auditor`, `python-playfab-titledata-pull`
 in this same `projects/ericwastaken/` folder). Fold them in as commands, not side scripts.
 
+## Every feature ships with its docs (Eric's rule, no exceptions)
+
+A new or changed command, option, config key, output format, request template, endpoint or
+behavior is NOT done until all four are updated in the same change:
+
+1. **Code** (with `pf_command`, `ALLOWED_ENDPOINTS`, `protect()` etc. as below).
+2. **Developer docs: `README.md`** (architecture if it moved, the "The PlayFab REST API"
+   endpoint table for every new endpoint with its Microsoft reference link, security notes).
+3. **User docs: `docs/`** (the commands reference, the relevant guide, configuration,
+   output formats, troubleshooting; add new pages to `mkdocs.yml` nav) and
+   `mkdocs build --strict` passes.
+4. **Agent skill: `SKILL.md`** (command table, output formats, config notes, safety rules,
+   common errors).
+
+Also update `AGENT.md` itself if a rule or trap changed, and `pfcli-config.example.yml` for
+new config keys. Before calling a feature finished, re-read all four and check they agree.
+
+## Documentation: three audiences (Eric's rule)
+
+- `README.md` is for **developers** working on pfcli (architecture, request flow, adding
+  commands, testing, docs build). Keep it technical and short.
+- `AGENT.md` (this file) is for **AI coding agents changing pfcli**: rules, traps, state.
+- `SKILL.md` is for **AI agents using pfcli** for a user (commands, output, safety rules).
+  Keep its command table and safety rules in sync with the code and the user guide.
+- `docs/` is the **user guide** (MkDocs Material, published to
+  https://ericwastaken.github.io/playfab-cli-unofficial/ by `.github/workflows/docs.yml`).
+  Write it for non-developers: friendly, task-first, generic examples only (`GAME-PROD`,
+  `acme`, `savePlayerSettings`). Any change to commands, options, config keys or output must
+  update the matching docs page in the same change. Check with
+  `uvx --with mkdocs-material==9.6.18 mkdocs build --strict` (site/ is gitignored).
+- Every audience must see the disclaimer: unofficial, not affiliated with Microsoft or Azure
+  PlayFab, use at your own risk (README warning, docs home + Stay safe page + footer, banner).
+- Banner art: SVG masters in `project-media/` (1600x500 wide, 800x500 mobile, 1200x630
+  social), PNG renders in `project-media/` and `docs/assets/`. No Microsoft/PlayFab logos or
+  brand colors; the art itself says "Not official or sanctioned by Microsoft."
+- License: MIT, `LICENSE`, Copyright (c) 2026 Eric Soto <easoto@iss-pr.com>.
+- Remote (not yet pushed): https://github.com/ericwastaken/playfab-cli-unofficial (public).
+
 ## House rules
 
 - **Generic only.** No client, studio, park or game names in code, comments, README or
   examples. Anything client-specific belongs in the gitignored
   `pfcli-config-<client>.yml` / `pfcli-secrets-<client>.yml`.
+- **No real title IDs anywhere committed (Eric's rule).** Examples, docs and artwork use
+  placeholder IDs only (`ABCD1`, `ABCD2`, banner `A1F3`/`7C2E`/`B90D`, PlayFab IDs
+  `1234567890ABCDEF`). Before committing, compare ID-like strings in committable files
+  against the owner's private inventory of real title and studio IDs (kept outside this
+  repo; ask Eric where), plus IDs found in local configs.
 - **Ignore by pattern.** `.gitignore` ignores every `pfcli*.yml|yaml` (and any `.env`
   variant) plus `output-formats/user-*` and `request-templates/user-*`. Keep new config/secrets
   names starting with `pfcli` and ending `.yml`; do not add per-file ignore lines.
+- **Public REST API only.** pfcli calls PlayFab's documented public REST API. When you
+  register an endpoint in `ALLOWED_ENDPOINTS`, add it (with its Microsoft reference link)
+  to the README's "The PlayFab REST API" table.
 - **Not read-only; credentials decide.** pfcli may read and write; what it can do is
   governed by the credentials supplied. Every command uses `pf_command` with
   `READ ONLY` or `READ WRITE` and its endpoints; every `READ WRITE` command gets

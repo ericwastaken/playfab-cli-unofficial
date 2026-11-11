@@ -35,6 +35,8 @@ ALLOWED_ENDPOINTS = {
     "Client/GetUserData": READ,
     "Client/GetAccountInfo": READ,
     "Client/GetPlayerCombinedInfo": READ,
+    "Client/GetTitleData": READ,
+    "Client/GetCatalogItems": READ,
     "Client/UpdateUserTitleDisplayName": WRITE,
     # Runs title code that can do anything; only functions allowed in the config are sent.
     "Client/ExecuteCloudScript": WRITE,
@@ -96,10 +98,13 @@ class _Base:
         if access == WRITE and dry_run:
             logger.info("DRY RUN %s %s: not sent", self.alias, endpoint)
             return {**env, "dryRun": True, "response": None}
-        env["response"] = self._post(endpoint, body, headers)
+        env["response"] = self._post(endpoint, body, headers, retry_server_errors=access != WRITE)
         return self.protect(env)
 
-    def _post(self, endpoint: str, body: dict, headers: dict) -> dict:
+    def _post(self, endpoint: str, body: dict, headers: dict, retry_server_errors: bool = True) -> dict:
+        """POST and return PlayFab's JSON reply. HTTP 429 (rate limited: nothing was done) is
+        retried with backoff. HTTP 5xx is retried only for reads: a write may have been applied
+        before the error, so repeating it could apply it twice (e.g. grant items twice)."""
         req = urllib.request.Request(
             f"{self.host}/{endpoint}",
             data=json.dumps(body).encode(),
@@ -116,6 +121,11 @@ class _Base:
                     last = json.load(e)
                 except ValueError:
                     last = {"code": e.code, "status": e.reason, "error": "NonJsonResponse"}
+                if e.code >= 500 and not retry_server_errors:
+                    logger.warning("%s %s: HTTP %s on a write; NOT retried. The change may or may not "
+                                   "have been applied: check the title before running it again.",
+                                   self.alias, endpoint, e.code)
+                    return last
                 if e.code == 429 or e.code >= 500:
                     wait = 2 ** attempt
                     logger.warning("%s %s: HTTP %s, retrying in %ss", self.alias, endpoint, e.code, wait)
