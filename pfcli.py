@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""pfcli - read-only PlayFab utilities.
+"""pfcli - PlayFab command-line utilities.
 
 Run through uv from this folder:  uv run pfcli.py --help
 """
@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parent
 @click.option("--json", "json_output", is_flag=True, help="Print results as JSON on stdout.")
 @click.pass_context
 def cli(ctx, config_file, secrets_file, log_level, json_output):
-    """pfcli - READ-ONLY PlayFab utilities, configured by a YAML config + YAML secrets file."""
+    """pfcli - PlayFab utilities, configured by a YAML config + YAML secrets file."""
     logging.basicConfig(level=getattr(logging, log_level.upper()), format="%(levelname)s %(message)s")
     if secrets_file is None:
         paired = paired_secrets_path(config_file)

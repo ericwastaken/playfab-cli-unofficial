@@ -4,7 +4,7 @@ Describes the **current** state; correct it rather than appending history.
 
 ## What this is
 
-`pfcli`, Eric's generic, read-only PlayFab CLI. One Click entry point (`pfcli.py`)
+`pfcli`, Eric's generic PlayFab CLI (all current commands only read). One Click entry point (`pfcli.py`)
 with a module per command in `lib/commands/`. It calls the PlayFab REST API directly
 (urllib in `lib/client.py`); do not add the PlayFab SDK. Titles and settings live in a
 YAML config, secret keys in a YAML secrets file keyed by title ID. Defaults are
@@ -27,11 +27,11 @@ in this same `projects/ericwastaken/` folder). Fold them in as commands, not sid
 - **Ignore by pattern.** `.gitignore` ignores every `pfcli*.yml|yaml` (and any `.env`
   variant), re-including only the two `*.example.yml` templates. Keep new config/secrets
   names starting with `pfcli` and ending `.yml`; do not add per-file ignore lines.
-- **Read-only by default.** `lib/client.py` enforces `ALLOWED_READS`. Never add a write
-  endpoint unless Eric asks for that exact capability, and then as an explicit,
-  separately named, confirm-before-run command.
-- **No Client API for data pulls.** A client login can create players or run the title's
-  login CloudScript, which writes.
+- **Read-only is not decided.** Today `lib/client.py` only sends endpoints in
+  `ALLOWED_READS`, and every command only reads. Whether pfcli stays read-only is Eric's
+  open decision: don't treat it as a rule, and don't add writes or Client API logins
+  without asking him. When it comes up, note that a Client login can create players or
+  run the title's login CloudScript, which writes.
 - **uv only.** `uv sync`, `uv run pfcli.py ...`, `uv add <pkg>`. Never `pip install`
   into the global Python.
 - **Secrets.** Never print a key; report "set/EMPTY" (the `titles` command) or at most the

@@ -1,7 +1,7 @@
 [project]
 name = "pfcli"
 version = "0.1.0"
-description = "pfcli: read-only PlayFab command-line utilities."
+description = "pfcli: PlayFab command-line utilities."
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.5.1",

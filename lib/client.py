@@ -1,7 +1,7 @@
-"""Minimal READ-ONLY PlayFab Server API client.
+"""Minimal PlayFab Server API client.
 
-Only read endpoints are allowed (ALLOWED_READS). Anything else raises before a
-request is sent, so no command can write to a title by accident.
+Only endpoints on the allow list (ALLOWED_READS, currently all reads) can be called.
+Anything else raises before a request is sent, so nothing reaches a title by accident.
 """
 import json
 import logging
@@ -31,7 +31,7 @@ class PlayFabServer:
 
     def call(self, api: str, body: dict) -> dict:
         if api not in ALLOWED_READS:
-            raise PlayFabError(f"Server/{api} is not on the read-only allow list")
+            raise PlayFabError(f"Server/{api} is not on the allow list (ALLOWED_READS)")
         req = urllib.request.Request(
             f"{self.host}/Server/{api}",
             data=json.dumps(body).encode(),

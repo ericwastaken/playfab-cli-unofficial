@@ -1,9 +1,9 @@
 # python-playfab-cli (`pfcli`)
 
-A single **Click** CLI with subcommands for **read-only** work against PlayFab titles.
+A single **Click** CLI with subcommands for working with PlayFab titles.
 Titles and hosts come from a YAML config and the secret keys from a YAML secrets file, so
 the same tool works for any studio or game. It calls the PlayFab REST API directly (no
-PlayFab SDK), so every request goes through one read-only gate. Runs through **uv** in
+PlayFab SDK), so every request goes through one gate with an endpoint allow list. Runs through **uv** in
 this folder's own `.venv` (Python 3.12, pinned in `.python-version`); the global Python is
 never touched.
 
@@ -14,7 +14,7 @@ never touched.
 ```
 pfcli.py                    entry point (Click group, global options)
 lib/config.py               loads and validates the YAML config and secrets
-lib/client.py               read-only Server API client (ALLOWED_READS)
+lib/client.py               Server API client with an endpoint allow list (ALLOWED_READS)
 lib/commands/*.py           one module per command
 pfcli-config.example.yml    config template   (committed)
 pfcli-secrets.example.yml   secrets template  (committed)
@@ -206,8 +206,8 @@ titles:
 - A **missing** key makes that title show `key EMPTY` in `titles`; `leaderboard-names`
   skips the title with a message and exits with status 1.
 - **Scope of the key:** a title secret key can call any Server and Admin API on that
-  title, including writes. pfcli itself only sends the read endpoints in `ALLOWED_READS`,
-  but the key does not enforce that. Treat it as full access.
+  title, including writes. pfcli only sends the endpoints in `ALLOWED_READS`, but the key
+  does not enforce that. Treat it as full access.
 
 ## Commands
 
@@ -217,7 +217,7 @@ as JSON on stdout), `--log-level`. Run `uv run pfcli.py <command> --help` for de
 | Command | Calls PlayFab? | What it does |
 |---|---|---|
 | `titles` | no | Lists the config and secrets files used, then each title's ID, host, boards and whether its key is found (`set (file)`, `set (env)`, `EMPTY`). |
-| `leaderboard-names ALIAS...` | read-only | For each configured board, pulls the top `depth` ranks of the current statistic version with `Server/GetLeaderboard` (`ShowDisplayName`). Writes `<out>/<ALIAS>-<board>.json`. Options: `--board` to pick boards, `--depth BOARD=N` to override depth, `--out` (default `output/<YYMMDD>/`), `--pause`. 100 per page; retries on 429/5xx. |
+| `leaderboard-names ALIAS...` | yes, reads only | For each configured board, pulls the top `depth` ranks of the current statistic version with `Server/GetLeaderboard` (`ShowDisplayName`). Writes `<out>/<ALIAS>-<board>.json`. Options: `--board` to pick boards, `--depth BOARD=N` to override depth, `--out` (default `output/<YYMMDD>/`), `--pause`. 100 per page; retries on 429/5xx. |
 | `names-report RAW_DIR` | no | From `leaderboard-names` output, writes `leaderboard-names.csv` (title, board, statistic, version, rank, display_name, default_name) and `known-good-names.csv` (unique names per title with boards, best_rank, default_name). Blanks are always removed. Names matching the title's `default_name_patterns` are flagged `default_name=yes` and dropped from known-good unless `--include-defaults` is passed. Uses `--config` for the patterns. Default output is the parent of `RAW_DIR`. |
 
 Example:
@@ -235,16 +235,24 @@ Notes:
 
 ## Safety
 
-`lib/client.py` only sends endpoints listed in `ALLOWED_READS`; anything else raises before
-a request is made. Use the Server API with a secret key, never the Client API, for data
-pulls: a client login can create players or trigger login CloudScript that writes data.
+Every PlayFab request goes through `PlayFabServer.call()` in `lib/client.py`, which only
+sends endpoints listed in `ALLOWED_READS`; anything else raises before a request is made.
+Today that list holds only read endpoints, so no current command changes anything on a
+title. Any new endpoint has to be added to the list on purpose.
+
+Things to weigh before adding a command that changes data or logs in as a player:
+
+- A title secret key has full Server and Admin access, so a mistake in a write command
+  hits live data directly.
+- A Client API login (e.g. `LoginWithCustomID`) can create players or trigger the title's
+  login CloudScript, which can write data, even when the command itself only reads.
 
 ## Adding a command
 
 1. New module in `lib/commands/`, a `@click.command("name")` with `@click.pass_context`.
    `ctx.obj` holds `config` (a `Config`), `json_output` and `root`.
 2. Call PlayFab through `PlayFabServer(config.title(alias)).call("<ReadApi>", body)`.
-   Add new read endpoints to `ALLOWED_READS`; never add a write endpoint.
+   Add each new endpoint to `ALLOWED_READS` (see Safety before adding one that writes).
 3. Register it in `pfcli.py` (`cli.add_command(...)`) and add it to the table above.
 4. If it needs new config keys, read them in `lib/config.py`, add them to
    `pfcli-config.example.yml`, and document them in the config reference above.
