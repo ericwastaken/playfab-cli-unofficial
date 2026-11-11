@@ -10,6 +10,25 @@ pfcli needs two small files, kept in the pfcli folder:
 `<name>` is any label you like, for example the studio or project: `pfcli-config-acme.yml`
 and `pfcli-secrets-acme.yml`. Keeping one pair per project keeps projects apart.
 
+## Quick path: `pfcli init`
+
+One command creates both files for you, with the right names and a private secrets file:
+
+```bash
+pfcli init acme --title GAME-DEV=ABCD2 --title GAME-PROD=ABCD1 \
+  --description GAME-DEV="Our game, development" --description GAME-PROD="Our game, production"
+```
+
+- `acme` is your project label; titles are `ALIAS=TITLE_ID`.
+- For a title on a dedicated cluster, add `--host GAME-PROD=https://{title_id}.your-cluster.playfabapi.com`.
+- Add `--dry-run` first to see the files without writing them.
+- Add a title later: `pfcli init acme --add-title GAME-STAGE=ABCD3`.
+
+Then paste your keys (step 2 below) and check with `titles --verify` (step 3). Prefer to
+let an AI agent walk you through it? See [Use pfcli with an AI agent](../agents.md).
+
+Or do it by hand:
+
 ## 1. Create the config
 
 Copy the example and edit it:
@@ -62,6 +81,12 @@ A dedicated key for pfcli is a good idea, so you can revoke it on its own.
     private (`chmod 600`), never share it, and never paste keys into chat or tickets. pfcli
     never prints keys.
 
+!!! tip "Where do I find the title ID?"
+    In Game Manager it's on the title's card on your studio page, in the browser address
+    (`.../t/ABCD2/...`), and under the title's **Settings (gear) > Title settings**. If your
+    Game Manager address is `developer.<cluster>.playfab.com` instead of
+    `developer.playfab.com`, the title is on a dedicated cluster and needs a `host`.
+
 ## 3. Check your setup
 
 ```bash
@@ -78,5 +103,15 @@ GAME-DEV   ABCD2    set (file)  https://ABCD2.playfabapi.com      Our game, deve
 ```
 
 `EMPTY` means pfcli didn't find a key for that title ID: check the secrets file.
+
+To prove the keys and addresses really work, add `--verify`. It makes one harmless call per
+title (it asks for title data that doesn't exist, so nothing real is read):
+
+```bash
+pfcli --config pfcli-config-acme.yml titles --verify
+```
+
+Each title shows `ok`, or what's wrong and how to fix it. You don't have to run it before
+every command: when a key or address is wrong, any command's error message says so too.
 
 Next: [Your first commands](first-commands.md).

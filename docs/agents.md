@@ -43,6 +43,18 @@ If pfcli is already cloned, open your agent in the pfcli folder and say:
 
 The agent finds everything else from there.
 
+## Let an agent set you up
+
+New to pfcli? Ask your agent:
+
+> Read `SKILL.md` and set up pfcli for my PlayFab titles.
+
+It switches to **bootstrap mode**: it asks for a project label and your titles one at a time
+(and tells you where to find each title ID in Game Manager), shows the `pfcli init` command
+it will run, creates the files, and then asks **you** to paste your secret keys into the
+secrets file in your own editor. It never asks for your keys and never opens that file.
+Finally it runs `pfcli titles --verify` to prove everything works.
+
 ## Install the skill
 
 Some agents load reusable **skills** from a skills folder. To make pfcli's skill available in

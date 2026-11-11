@@ -151,7 +151,8 @@ lib/output.py               Emitter (NDJSON / --raw) and OutputFormat (JMESPath 
 lib/inputs.py               input rows (CSV/NDJSON), request templates, placeholders, --var
 lib/sessions.py             player session store (chmod 600), expiry, redaction helpers
 lib/files.py                NAME vs path lookup for formats and templates
-lib/commands/titles.py      local command
+lib/commands/titles.py      `titles` (+ `--verify`: one harmless Server/GetTitleData per title)
+lib/commands/init.py        `init`: creates/extends a config + chmod-600 secrets pair (LOCAL WRITE)
 lib/commands/common.py      shared paging/concurrency helpers
 lib/commands/endpoints.py   table-driven commands for simple flat endpoints (server/admin/client)
 lib/commands/server/*.py    `server` commands with their own logic, one module each
@@ -232,6 +233,12 @@ security-relevant. The user-facing version of this section is the guide's
   `http://` is used only for local fake-server testing); never point a real title's `host`
   anywhere but PlayFab.
 - **No telemetry**: pfcli talks only to the configured PlayFab hosts.
+- **Keys are never options or chat input.** `pfcli init` creates the secrets file with empty
+  slots (`0600`) and tells the user to paste keys in an editor, so keys never land in shell
+  history or agent transcripts.
+- **Setup errors explain themselves.** `error_text()` adds a fix-it hint for
+  `InvalidAPIEndpoint` (dedicated cluster / wrong title ID) and rejected secret keys, pointing
+  to `pfcli titles --verify`; there is deliberately no automatic pre-flight call.
 - **Writes are never retried on a server error.** HTTP 429 (rate limited, nothing done) is
   retried with backoff; HTTP 5xx is retried only for reads. A write that fails with 5xx may
   already have been applied (e.g. items granted), so pfcli stops and says to check first.

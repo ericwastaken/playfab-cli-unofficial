@@ -50,6 +50,51 @@ If you are asked to change pfcli's **code**, read `AGENT.md` in the repository i
 
 ---
 
+## Bootstrap mode (no config yet, or "set up pfcli")
+
+Enter this mode when the pfcli folder has no `pfcli-config-*.yml`, or the user asks to set
+pfcli up or add titles. Interview the user **one question at a time**, explaining where each
+fact is in PlayFab, then let `pfcli init` write the files.
+
+1. **Project label**: a short lowercase name for this set of titles (e.g. `acme`). It names
+   the files `pfcli-config-acme.yml` and `pfcli-secrets-acme.yml`.
+2. **Titles**, for each one:
+   - **Alias**: a short name they'll type (e.g. `GAME-DEV`, `GAME-PROD`).
+   - **Title ID**: in Game Manager it's on the title's card on the studio page, in the URL
+     (`.../t/<TITLE_ID>/...`), and under the title's Settings (gear) > Title settings.
+     4-10 hex characters.
+   - **Description**: e.g. "Our game, production".
+   - **Dedicated cluster?** If their Game Manager address is
+     `developer.<cluster>.playfab.com` (not `developer.playfab.com`), the title needs
+     `--host ALIAS=https://{title_id}.<cluster>.playfabapi.com`.
+3. **Secret keys needed?** Only for `server` / `admin` commands. Player-only (`client`) use
+   needs none.
+4. **Show the plan, then create** (LOCAL WRITE; dry-run first, then run after a yes):
+   ```bash
+   pfcli init acme --title GAME-DEV=ABCD2 --title GAME-PROD=ABCD1 \
+     --description GAME-DEV="Our game, dev" --dry-run
+   ```
+   Add titles to an existing pair later with `pfcli init acme --add-title ALIAS=TITLE_ID`.
+5. **Secrets hand-off (never handle keys yourself).** Tell the user to:
+   - create a **dedicated** key: Game Manager > the title > Settings (gear) > Title settings >
+     Secret Keys > New secret key (name it e.g. "pfcli");
+   - open `pfcli-secrets-acme.yml` in **their own editor** and paste each key between the
+     quotes next to its title ID, then save.
+
+   Do not open, read or edit the secrets file. If the user pastes a key into the chat, tell
+   them not to, and recommend disabling that key and creating a new one (it's now in the
+   transcript).
+6. **Verify**: `pfcli --config pfcli-config-acme.yml titles --verify`. It makes one harmless
+   call per title (asks for TitleData that doesn't exist). Explain any failure: `skipped: no
+   secret key` (fine for client-only titles), `secret key was rejected` (wrong or disabled
+   key, or pasted under the wrong title ID), `InvalidAPIEndpoint` (dedicated cluster: set
+   `--host`, or the title ID is wrong).
+7. **Next**: suggest a first READ ONLY command (e.g. a leaderboard) and point to the user
+   guide. Offer the advanced, game-specific config (CloudScript allow list, player
+   sequences, `redact`) only if the user needs client-side game flows.
+
+---
+
 ## Find and run pfcli
 
 pfcli runs from its cloned folder with uv:
@@ -75,10 +120,12 @@ there are several. Below, `pfcli` means `uv run pfcli.py`.
 pfcli --config pfcli-config-acme.yml -o leaderboard-entries server get-leaderboard GAME-PROD -s score --max 100
 ```
 
-Start every session by checking the setup (safe; prints no secrets):
+Start every session by checking the setup (safe; prints no secrets). If there's no config
+yet, use **Bootstrap mode** above.
 
 ```bash
 pfcli --config pfcli-config-acme.yml -o titles-table titles
+pfcli --config pfcli-config-acme.yml titles --verify     # one harmless live call per title
 ```
 
 ---
@@ -90,7 +137,8 @@ one failing title doesn't stop the others; exit status 1 if any failed).
 
 | Command | Access | Use for |
 |---|---|---|
-| `titles` | READ ONLY | Titles, key status (`set`/`EMPTY`), allowed CloudScript, player sequences |
+| `init NAME --title ALIAS=ID... [--description ALIAS=TEXT] [--host ALIAS=URL]` / `init NAME --add-title ALIAS=ID` | LOCAL WRITE | Create a config + empty secrets pair (or add titles); see Bootstrap mode |
+| `titles [--verify]` | READ ONLY | Titles, key status (`set`/`EMPTY`), allowed CloudScript, player sequences; `--verify` proves host + key with one harmless call per title |
 | `server get-leaderboard ALIAS... -s STAT [--max N] [--start N] [--version N]` | READ ONLY | Leaderboards (pages of 100). Statistic names are case-sensitive; an empty board usually means a wrong name |
 | `server get-title-data ALIAS... [-k KEY]...` | READ ONLY | TitleData |
 | `server get-player-combined-info ALIAS... [-p ID]... [-i FILE\|-] [--id-column COL] [-r TEMPLATE] [--var K=V]` | READ ONLY | Player details in bulk |
@@ -158,7 +206,9 @@ themselves. Run `pfcli <group> <command> --help` for every option.
 
 | Message | Meaning / action |
 |---|---|
-| `key EMPTY` / `no secret key for title` | The secrets file has no key for that title ID; ask the user to add it (never ask them to paste it to you) |
+| `key EMPTY` / `no secret key for title` | The secrets file has no key for that title ID; ask the user to add it in their editor (never ask them to paste it to you) |
+| `No titles defined` | New config: add titles with `pfcli init NAME --add-title ALIAS=TITLE_ID` |
+| `(hint: ... secret key was rejected ...)` | Wrong/disabled key or wrong title ID in the secrets file; run `titles --verify` |
 | `InvalidAPIEndpoint` | Title is on a dedicated cluster: add `host` to the title in the config |
 | `No such option` | Global vs command option placement |
 | `no saved session` / `session ... has expired` | Run the login command pfcli prints (a write: ask first) |

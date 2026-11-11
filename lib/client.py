@@ -253,5 +253,16 @@ def session_expired(envelope: dict) -> bool:
 
 
 def error_text(envelope: dict) -> str:
+    """One-line error for stderr, with a fix-it hint for setup problems (wrong cluster host,
+    rejected secret key) so users don't need a separate verification step."""
     r = envelope.get("response") or {}
-    return f"{r.get('code')} {r.get('error') or r.get('status')}: {r.get('errorMessage') or ''}".strip()
+    err = r.get("error") or r.get("status")
+    text = f"{r.get('code')} {err}: {r.get('errorMessage') or ''}".strip()
+    family = str(envelope.get("endpoint", "")).split("/", 1)[0]
+    if err == "InvalidAPIEndpoint":
+        text += (" (hint: the title is probably on a dedicated cluster, or its title ID is wrong; set its "
+                 "`host` in the config, then check with: pfcli titles --verify)")
+    elif family in SECRET_KEY_FAMILIES and (r.get("code") == 401 or err in ("NotAuthenticated", "InvalidSecretKey")):
+        text += (" (hint: the title's secret key was rejected: check the secrets file, then: "
+                 "pfcli titles --verify)")
+    return text

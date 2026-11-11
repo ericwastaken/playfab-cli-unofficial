@@ -29,6 +29,7 @@ from lib.commands.client.update_user_title_display_name import update_user_title
 from lib.commands.server.get_leaderboard import get_leaderboard
 from lib.commands.server.get_player_combined_info import get_player_combined_info
 from lib.commands.server.get_title_data import get_title_data
+from lib.commands.init import init
 from lib.commands.titles import titles
 from lib.config import Config, ConfigError, Secrets, paired_secrets_path
 from lib.output import Emitter, FormatError, OutputFormat, find_format
@@ -120,6 +121,7 @@ def client():
 
 
 cli.add_command(titles)
+cli.add_command(init)
 for cmd in (get_leaderboard, get_title_data, get_player_combined_info):
     server.add_command(cmd)
 for cmd in (login_with_custom_id, client_get_leaderboard, client_get_player_profile, client_get_user_data,

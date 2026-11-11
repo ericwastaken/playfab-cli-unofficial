@@ -141,6 +141,10 @@ new config keys. Before calling a feature finished, re-read all four and check t
   CloudScript, which writes; say so when a command would use one.
 - **uv only.** `uv sync`, `uv run pfcli.py ...`, `uv add <pkg>`. Never `pip install`
   into the global Python.
+- **Bootstrap.** `pfcli init` (LOCAL WRITE) creates/extends config + secrets pairs; never add
+  an option or flow that accepts secret keys (they'd leak into shell history / transcripts).
+  `titles --verify` is the opt-in setup check; error hints cover the rest. Eric agreed: no
+  automatic pre-flight call on every command (it would add an API call per title per command).
 - **Secrets.** Never print a key; report "set/EMPTY" (the `titles` command) or at most the
   last 4 characters. Keep secrets files at `chmod 600` (pfcli warns otherwise).
 - The `.venv` is not portable: after moving the folder, delete `.venv` and `uv sync`.

@@ -4,6 +4,15 @@
     pfcli didn't find a config. Pass yours: `--config pfcli-config-acme.yml`, or create one
     from `pfcli-config.example.yml` ([Set up your titles](getting-started/setup.md)).
 
+??? question "`No titles defined`"
+    A new config has no titles yet. Add one: `pfcli init acme --add-title GAME-DEV=ABCD2`
+    (or edit the file).
+
+??? question "`titles --verify` says the secret key was rejected"
+    The key is wrong, disabled, or pasted next to the wrong title ID. Create a fresh key in
+    Game Manager (Settings > Title settings > Secret Keys), paste it in the secrets file, and
+    run `--verify` again.
+
 ??? question "`key EMPTY` in `titles`, or `no secret key for title ...`"
     pfcli didn't find that title's key. Check that the secrets file's name matches the config
     (`pfcli-config-acme.yml` ↔ `pfcli-secrets-acme.yml`), that it lists the **title ID** (not

@@ -164,7 +164,8 @@ class Config:
         self.default_redact = _redact(self.defaults.get("redact"), f"{path}: defaults")
         self.titles = raw.get("titles") or {}
         if not self.titles:
-            raise ConfigError(f"No titles defined in {path}")
+            raise ConfigError(f"No titles defined in {path}. Add one with: pfcli init <name> --add-title ALIAS=TITLE_ID "
+                              f"(or edit the file; see pfcli init --help)")
         for alias, t in self.titles.items():
             if not t.get("title_id"):
                 raise ConfigError(f"{path}: title '{alias}' is missing 'title_id'")

@@ -29,7 +29,8 @@ Every command is tagged in its help:
 
 | Command | Access | What it does |
 |---|---|---|
-| `titles` | READ ONLY | Lists your titles, whether each key was found, allowed CloudScript functions and player sequences. |
+| `titles [--verify]` | READ ONLY | Lists your titles, whether each key was found, allowed CloudScript functions and player sequences. `--verify` makes one harmless call per title to prove its address and key work. |
+| `init NAME --title ALIAS=ID... [--description ALIAS=TEXT] [--host ALIAS=URL] [--dir DIR] [--force]` | LOCAL WRITE | Creates `pfcli-config-NAME.yml` and a private `pfcli-secrets-NAME.yml` with an empty slot per title ID. `init NAME --add-title ALIAS=ID` adds titles to an existing pair. |
 
 ## `server`: with the title secret key
 
