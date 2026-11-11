@@ -22,6 +22,9 @@ HANDOFF*.md
 output/
 
 # --- Tooling ---
+dist/
+build/
+*.egg-info/
 .venv/
 __pycache__/
 .idea/

@@ -9,7 +9,8 @@ Put these **before** the command name.
 
 | Option | Meaning |
 |---|---|
-| `--config FILE` | Your config file. Default: `pfcli-config.yml` in the pfcli folder. |
+| `--config FILE` | Your config file. Default: `pfcli-config.yml` in your pfcli folder (`PFCLI_HOME`, or the folder you run from). |
+| `--version` | Show pfcli's version. |
 | `--secrets FILE` | Your secrets file. Default: the one matching the config's name (`pfcli-config-acme.yml` → `pfcli-secrets-acme.yml`). |
 | `--sessions FILE` | Saved player logins. Default: matching the config's name (`pfcli-sessions-acme.yml`). |
 | `-o, --output-format NAME\|FILE` | Reshape the output (see [Shape the output](../guides/output-formats.md)). |

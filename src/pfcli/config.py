@@ -151,7 +151,8 @@ class Secrets:
 class Config:
     def __init__(self, path: Path, secrets: Secrets | None = None):
         if not path.exists():
-            raise ConfigError(f"Missing {path}. Copy pfcli-config.example.yml to pfcli-config.yml and edit it.")
+            raise ConfigError(f"Missing {path}. Create one with: pfcli init <name> --title ALIAS=TITLE_ID "
+                              f"(then use --config pfcli-config-<name>.yml), or set PFCLI_HOME to your pfcli folder.")
         raw = yaml.safe_load(path.read_text()) or {}
         self.path = path
         self.secrets = secrets or Secrets(None)

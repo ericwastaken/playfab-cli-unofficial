@@ -27,9 +27,9 @@ class FormatError(RuntimeError):
     pass
 
 
-def find_format(spec: str, config_dir: Path, tool_dir: Path) -> Path:
+def find_format(spec: str, config_dir: Path, home_dir: Path) -> Path:
     try:
-        return find_named(spec, FORMATS_DIR, config_dir, tool_dir, "Output format")
+        return find_named(spec, FORMATS_DIR, config_dir, home_dir, "Output format")
     except NamedFileError as e:
         raise FormatError(str(e))
 

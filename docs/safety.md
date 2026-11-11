@@ -166,7 +166,8 @@ That can be personal data.
 
 All of these are private automatically (Git ignores them): `pfcli-config-*`,
 `pfcli-secrets-*`, `pfcli-sessions-*`, and `user-*` formats and templates. Anything else in
-the pfcli folder could be committed, so keep project details in those files. See
+your pfcli folder could be committed if it's in a Git repository, so keep project details
+in those files. See
 [Files and Git](reference/files-and-git.md).
 
 ## What pfcli does for you

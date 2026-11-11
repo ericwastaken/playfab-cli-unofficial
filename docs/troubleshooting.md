@@ -1,8 +1,9 @@
 # Troubleshooting
 
 ??? question "`Missing pfcli-config.yml`"
-    pfcli didn't find a config. Pass yours: `--config pfcli-config-acme.yml`, or create one
-    from `pfcli-config.example.yml` ([Set up your titles](getting-started/setup.md)).
+    pfcli didn't find a config in the folder you ran it from. Run it from your pfcli folder,
+    set `PFCLI_HOME`, pass `--config pfcli-config-acme.yml`, or create one with `pfcli init`
+    ([Set up your titles](getting-started/setup.md)).
 
 ??? question "`No titles defined`"
     A new config has no titles yet. Add one: `pfcli init acme --add-title GAME-DEV=ABCD2`
@@ -57,5 +58,10 @@
 ??? question "A YAML error mentioning `?`"
     Quote optional placeholders inside one-line `{ }` or `[ ]`: `{ name: "$name?" }`.
 
-??? question "pfcli stopped starting after I moved its folder"
-    Delete the `.venv` folder and run `uv sync`.
+??? question "`pfcli: command not found`"
+    Run `uv tool update-shell` once and open a new terminal. Check with `uv tool list`.
+
+??? question "pfcli can't find my format or template"
+    Your own formats and templates live in `output-formats/` and `request-templates/` in
+    your pfcli folder (or next to your config). Run pfcli from that folder or set
+    `PFCLI_HOME`. The error lists every place pfcli looked.

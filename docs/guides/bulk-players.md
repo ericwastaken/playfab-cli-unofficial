@@ -55,8 +55,9 @@ statistics:
 pfcli --config pfcli-config-acme.yml server get-player-combined-info GAME-PROD -p 1234567890ABCDEF -r player-basics
 ```
 
-To make your own, copy it to `request-templates/user-<something>.yml` (private, ignored by
-Git) and edit it:
+To make your own, save a copy as `request-templates/user-<something>.yml` in your pfcli
+folder ([built-in templates on GitHub](https://github.com/ericwastaken/playfab-cli-unofficial/tree/main/src/pfcli/builtin/request-templates))
+and edit it:
 
 ```yaml
 # request-templates/user-acme-progress.yml

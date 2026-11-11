@@ -6,8 +6,8 @@
 |---|---|---|---|
 | Your files | `pfcli-config-<name>.yml` | `pfcli-secrets-<name>.yml` | `pfcli-sessions-<name>.yml` (created by pfcli) |
 | Option | `--config` | `--secrets` | `--sessions` |
-| Found automatically? | Default `pfcli-config.yml` | Yes, from the config's name, in the same folder | Yes, from the config's name |
-| Example to copy | `pfcli-config.example.yml` | `pfcli-secrets.example.yml` | none |
+| Found automatically? | Default `pfcli-config.yml` in your pfcli folder | Yes, from the config's name, in the same folder | Yes, from the config's name |
+| Create with | `pfcli init` (or the [example](https://github.com/ericwastaken/playfab-cli-unofficial/blob/main/pfcli-config.example.yml)) | `pfcli init` (or the [example](https://github.com/ericwastaken/playfab-cli-unofficial/blob/main/pfcli-secrets.example.yml)) | none |
 
 All of your own files are private: Git ignores them. See [Files and Git](files-and-git.md).
 

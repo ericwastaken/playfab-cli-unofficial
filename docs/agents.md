@@ -36,9 +36,9 @@ use pfcli without guessing.
 
 ## Quick start: just tell your agent
 
-If pfcli is already cloned, open your agent in the pfcli folder and say:
+Open your agent in your pfcli folder (see [Install](install.md)) and say:
 
-> Read `SKILL.md` in this folder and follow it. Then, using my config `pfcli-config-acme.yml`,
+> Read pfcli's skill (https://github.com/ericwastaken/playfab-cli-unofficial/blob/main/SKILL.md) and follow it. Then, using my config `pfcli-config-acme.yml`,
 > list my titles and show the top 20 of the `score` leaderboard on GAME-DEV as a table.
 
 The agent finds everything else from there.

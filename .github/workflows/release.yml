@@ -1,0 +1,50 @@
+name: Release
+
+# Push a tag like v0.1.0 (matching `version` in pyproject.toml) to build pfcli and publish
+# a GitHub Release with the wheel and source archive attached. Users then install with:
+#   uv tool install git+https://github.com/ericwastaken/playfab-cli-unofficial@v0.1.0
+# or from the release's wheel URL.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Check the tag matches the package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          if [ "$tag" != "$version" ]; then
+            echo "Tag v$tag does not match pyproject.toml version $version" >&2
+            exit 1
+          fi
+
+      - name: Build wheel and source archive
+        run: uv build
+
+      - name: Smoke-test the built wheel
+        run: |
+          uv tool install --python 3.12 dist/*.whl
+          pfcli --version
+          pfcli --help > /dev/null
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "pfcli $GITHUB_REF_NAME" \
+            --notes "Install: \`uv tool install git+https://github.com/${GITHUB_REPOSITORY}@${GITHUB_REF_NAME}\` (see the user guide: https://ericwastaken.github.io/playfab-cli-unofficial/install/). Unofficial; not affiliated with Microsoft or Azure PlayFab."

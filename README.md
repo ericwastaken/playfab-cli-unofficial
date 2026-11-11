@@ -20,19 +20,41 @@ JSON on stdout, reshaped by YAML output formats when needed.
 
 [Open the pfcli user guide](https://ericwastaken.github.io/playfab-cli-unofficial/)
 
+Users install pfcli as a tool, straight from GitHub (see the guide's
+[Install](https://ericwastaken.github.io/playfab-cli-unofficial/install/) page):
+
+```bash
+uv tool install git+https://github.com/ericwastaken/playfab-cli-unofficial@v0.1.0
+```
+
 The guide (built from `docs/`) is the source of truth for users: setup, the config and secrets
 files, every command, output formats, player sessions, CloudScript and player sequences, and
 troubleshooting. This README is for developers working on pfcli itself. For AI agents:
 `SKILL.md` teaches an agent to **use** pfcli safely on a user's behalf; `AGENT.md` is for
 agents **changing** pfcli's code.
 
-## Development
+## Developer install
 
-Requires [uv](https://docs.astral.sh/uv/). The project pins Python 3.12 (`.python-version`).
+For working on pfcli itself. Requires [uv](https://docs.astral.sh/uv/) and Git; the project
+pins Python 3.12 (`.python-version`).
 
 ```bash
-uv sync
-uv run pfcli.py --help
+git clone https://github.com/ericwastaken/playfab-cli-unofficial.git
+cd playfab-cli-unofficial
+uv sync                      # creates .venv and installs pfcli in editable mode
+uv run pfcli --help          # the console command, from your checkout
+uv run pfcli.py --help       # same, through the root shim (works without installing)
+```
+
+Run it from the checkout folder: that folder is then your pfcli home, so your local
+`pfcli-config-*.yml`, secrets, sessions, `user-*` formats and `pfcli-exports/` live there and
+are ignored by the repository's `.gitignore`. To try the installed experience from your
+working tree:
+
+```bash
+uv build                                         # dist/*.whl and dist/*.tar.gz
+uv tool install --force dist/playfab_cli_unofficial-*.whl
+pfcli --version
 ```
 
 - Dependencies: `uv add <package>` (never `pip install` into a global Python). Runtime deps
@@ -40,6 +62,31 @@ uv run pfcli.py --help
 - No PlayFab SDK, on purpose: every request goes through one client so access rules, dry runs
   and redaction cannot be bypassed.
 - The `.venv` is not portable: after moving the folder, `rm -rf .venv && uv sync`.
+
+### Where pfcli looks for files
+
+- **The user's files** live in the *pfcli home*: `$PFCLI_HOME`, or else the current working
+  folder (`pfcli.files.home()`). Defaults (`pfcli-config.yml`, paired secrets/sessions,
+  `init` output, `pfcli-exports/`) are relative to it; `user-*` formats and templates are
+  searched next to the config, then in the home folder.
+- **Built-in formats and templates** ship inside the package in `src/pfcli/builtin/` and are
+  searched last. Add generic ones there (never client-specific ones).
+
+### Packaging and releases
+
+- Package name `playfab-cli-unofficial` (the name `pfcli` is taken on PyPI); console command
+  `pfcli` (`[project.scripts]` → `pfcli.cli:main`); build backend hatchling; the wheel contains
+  `src/pfcli/` including `builtin/`.
+- Version: `version` in `pyproject.toml`, shown by `pfcli --version` (`importlib.metadata`).
+- Release: bump `version`, commit, then push a matching tag:
+  ```bash
+  git tag v0.1.0 && git push origin v0.1.0
+  ```
+  `.github/workflows/release.yml` checks the tag matches the version, runs `uv build`,
+  smoke-tests the wheel with `uv tool install`, and creates a GitHub Release with the wheel
+  and source archive attached.
+- GitHub Packages has no Python registry, so installs come from the Git tag (preferred) or
+  the release's wheel URL. PyPI publishing (as `playfab-cli-unofficial`) is possible later.
 
 ### Local files (never committed)
 
@@ -139,27 +186,28 @@ and response shapes are exactly those in the reference; pfcli does not translate
 ## Architecture
 
 ```
-pfcli.py                    Click root group: global options, lazy App (config, sessions,
-                            emitter), `server` and `client` groups
-lib/config.py               config + secrets loading: titles, hosts, cloudscripts allow list,
+pfcli.py                    checkout shim: `uv run pfcli.py` (installed command: `pfcli`)
+src/pfcli/cli.py            Click root group: global options, lazy App (config, sessions,
+                            emitter), `server` / `admin` / `client` groups, main()
+src/pfcli/config.py               config + secrets loading: titles, hosts, cloudscripts allow list,
                             player sequences, redact patterns; paired-file resolution
-lib/client.py               ALLOWED_ENDPOINTS registry; TitleClient (Server/Admin, secret
+src/pfcli/client.py               ALLOWED_ENDPOINTS registry; TitleClient (Server/Admin, secret
                             key) and PlayerClient (Client, session ticket); envelopes,
                             retries, dry runs, credential scrubbing (protect)
-lib/pfcommand.py            pf_command decorator: access tag, endpoint checks, help, --dry-run
-lib/output.py               Emitter (NDJSON / --raw) and OutputFormat (JMESPath rows/fields)
-lib/inputs.py               input rows (CSV/NDJSON), request templates, placeholders, --var
-lib/sessions.py             player session store (chmod 600), expiry, redaction helpers
-lib/files.py                NAME vs path lookup for formats and templates
-lib/commands/titles.py      `titles` (+ `--verify`: one harmless Server/GetTitleData per title)
-lib/commands/admin/segment_export.py  async segment export: start, poll (--wait), download
-lib/commands/init.py        `init`: creates/extends a config + chmod-600 secrets pair (LOCAL WRITE)
-lib/commands/common.py      shared paging/concurrency helpers
-lib/commands/endpoints.py   table-driven commands for simple flat endpoints (server/admin/client)
-lib/commands/server/*.py    `server` commands with their own logic, one module each
-lib/commands/client/*.py    `client` commands with their own logic, plus sessions and sequences
-output-formats/*.yml        built-in output formats (user-*.yml are local)
-request-templates/*.yml     built-in request templates (user-*.yml are local)
+src/pfcli/pfcommand.py            pf_command decorator: access tag, endpoint checks, help, --dry-run
+src/pfcli/output.py               Emitter (NDJSON / --raw) and OutputFormat (JMESPath rows/fields)
+src/pfcli/inputs.py               input rows (CSV/NDJSON), request templates, placeholders, --var
+src/pfcli/sessions.py             player session store (chmod 600), expiry, redaction helpers
+src/pfcli/files.py          pfcli home folder; NAME vs path lookup (config dir, home, built-ins)
+src/pfcli/commands/titles.py      `titles` (+ `--verify`: one harmless Server/GetTitleData per title)
+src/pfcli/commands/admin/segment_export.py  async segment export: start, poll (--wait), download
+src/pfcli/commands/init.py        `init`: creates/extends a config + chmod-600 secrets pair (LOCAL WRITE)
+src/pfcli/commands/common.py      shared paging/concurrency helpers
+src/pfcli/commands/endpoints.py   table-driven commands for simple flat endpoints (server/admin/client)
+src/pfcli/commands/server/*.py    `server` commands with their own logic, one module each
+src/pfcli/commands/client/*.py    `client` commands with their own logic, plus sessions and sequences
+src/pfcli/builtin/          built-in output formats and request templates (package data)
+output-formats/, request-templates/  your local user-*.yml (gitignored)
 docs/, mkdocs.yml           user guide (GitHub Pages)
 ```
 
@@ -169,11 +217,11 @@ docs/, mkdocs.yml           user guide (GitHub Pages)
    `READ ONLY`, `READ WRITE` (calls a write endpoint; gets `--dry-run`) or `LOCAL WRITE`
    (changes a local file only; gets `--dry-run`). Declarations are checked at import, so a
    `READ ONLY` command that lists a write endpoint fails immediately.
-2. Every endpoint is registered in `lib/client.py` `ALLOWED_ENDPOINTS` as
+2. Every endpoint is registered in `src/pfcli/client.py` `ALLOWED_ENDPOINTS` as
    `"<Family>/<Name>": READ | WRITE`, named as in PlayFab's REST API (`Server/...`,
    `Admin/...`, `Client/...`). Unregistered endpoints raise before any request.
 3. Bodies are built from options, request templates or the config, resolved by
-   `lib/inputs.resolve` before the first call: `$.column` (input row), reserved
+   `src/pfcli/inputs.resolve` before the first call: `$.column` (input row), reserved
    `$session $playFabId $customId $titleId`, `$NAME` / optional `$NAME?` from `--var`.
    Rule: the CLI supplies values, never structure.
 4. `TitleClient.call()` / `PlayerClient.call()` POST and return an envelope
@@ -190,7 +238,7 @@ docs/, mkdocs.yml           user guide (GitHub Pages)
 
 `client login-with-custom-id` (and `create-player`) save one session per (title ID, custom
 ID) in the sessions file; every other client command looks it up with `--custom-id` and never
-logs in by itself (`for_each_session` in `lib/commands/client/common.py`). Every client
+logs in by itself (`for_each_session` in `src/pfcli/commands/client/common.py`). Every client
 command's help carries `SESSION_NOTES`. Tickets older than ~24 h, or rejected by PlayFab, are
 skipped with a "log in again" message.
 
@@ -198,7 +246,7 @@ skipped with a "log in again" message.
 
 `cloudscripts` (allow list with `writes` and `parameter`) and `player.create|update|state`
 (steps: `cloudscript: NAME` or `call: Family/Endpoint`) live in the user's config, because they
-are unique to each game. `lib/commands/client/sequences.py` plans (all checks, before any
+are unique to each game. `src/pfcli/commands/client/sequences.py` plans (all checks, before any
 call) and runs them; `player.state` must contain only reads.
 
 ## Security
@@ -274,7 +322,7 @@ for this repository.
 ## Adding a command
 
 **Simple flat endpoint** (a player or title plus a few fields, no paging or templates): add an
-`EndpointSpec` to `SPECS` in `lib/commands/endpoints.py` (endpoint, scope `player` / `title` /
+`EndpointSpec` to `SPECS` in `src/pfcli/commands/endpoints.py` (endpoint, scope `player` / `title` /
 `session` / `session_target`, fields, optional `guard` `"bulk"` or `"always"`) and register the
 endpoint. `build_command()` creates the Click command with the standard options, access tag,
 `--dry-run`, and the `--yes` guard: writes on more than 10 targets or several titles, and every
@@ -282,7 +330,7 @@ endpoint. `build_command()` creates the Click command with the standard options,
 
 **Anything with real logic** (paging, request templates, sequences, sessions handling):
 
-1. Create `lib/commands/<group>/<name>.py` with `@pf_command("<endpoint-in-kebab-case>",
+1. Create `src/pfcli/commands/<group>/<name>.py` with `@pf_command("<endpoint-in-kebab-case>",
    READ_ONLY | READ_WRITE, ("Family/Endpoint",))`. Commands that call PlayFab take `ALIAS...`
    (one or more titles), keep going when one title fails, and exit 1 if any failed.
 2. Register new endpoints in `ALLOWED_ENDPOINTS` with `READ` or `WRITE`.
@@ -291,8 +339,8 @@ endpoint. `build_command()` creates the Click command with the standard options,
    `for_each_session`.
 4. Small flat PlayFab-defined requests get options; nested ones get `--request` templates;
    title-defined shapes belong in the config. Values come from `--var`.
-5. Register the command in `pfcli.py` and document it in `docs/` (user guide). New config
-   keys go in `lib/config.py`, `pfcli-config.example.yml` and the configuration reference.
+5. Register the command in `src/pfcli/cli.py` and document it in `docs/` (user guide). New config
+   keys go in `src/pfcli/config.py`, `pfcli-config.example.yml` and the configuration reference.
 
 ## Testing
 

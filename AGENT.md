@@ -4,10 +4,13 @@ Describes the **current** state; correct it rather than appending history.
 
 ## What this is
 
-`pfcli`, Eric's generic PlayFab CLI (read and write; each command is tagged). One Click
-entry point (`pfcli.py`) with a module per command in `lib/commands/` (API-family groups
-in subfolders, e.g. `lib/commands/server/`). It calls the PlayFab REST API directly
-(urllib in `lib/client.py`); do not add the PlayFab SDK. Titles and settings live in a
+`pfcli`, Eric's generic PlayFab CLI (read and write; each command is tagged). Python package
+`src/pfcli/` (distribution `playfab-cli-unofficial`; console command `pfcli` =
+`pfcli.cli:main`; the root `pfcli.py` is only a checkout shim), with a module per command in
+`src/pfcli/commands/` (API-family groups in subfolders). Users install it with
+`uv tool install git+https://github.com/ericwastaken/playfab-cli-unofficial@vX.Y.Z`;
+developers run `uv sync` and `uv run pfcli` in a checkout. It calls the PlayFab REST API
+directly (urllib in `src/pfcli/client.py`); do not add the PlayFab SDK. Titles and settings live in a
 YAML config, secret keys in a YAML secrets file keyed by title ID. Defaults are
 `pfcli-config.yml` / `pfcli-secrets.yml`; per client, `pfcli-config-<client>.yml` /
 `pfcli-secrets-<client>.yml`. `--config` alone is enough: the secrets file is found by
@@ -83,10 +86,11 @@ new config keys. Before calling a feature finished, re-read all four and check t
   `ctx.obj.emitter.emit(...)`; for PlayFab calls that is the envelope from
   `TitleClient.call()` with PlayFab's response untouched. Default output is NDJSON of
   those; `--raw` prints only the response; `-o/--output-format` reshapes any command's
-  output with a format file from `output-formats/`. Never add command-specific output
-  files or formats (Eric's rule); add a generic built-in format to `output-formats/`.
+  output with a format file (`output-formats/` in the user's folder, or built-in). Never
+  add command-specific output; add a generic built-in format to `src/pfcli/builtin/output-formats/`.
 - **Built-in vs user files (Eric's rule).** Formats/templates that ship with pfcli are
-  generic and committed (`output-formats/NAME.yml`, `request-templates/NAME.yml`). A
+  generic and committed (`src/pfcli/builtin/output-formats/NAME.yml`,
+  `src/pfcli/builtin/request-templates/NAME.yml`). A
   user's own (client-specific) ones are `user-<name>.yml` and gitignored. Never give a
   client-specific file a name without the `user-` prefix.
 - **Several titles per command (a feature Eric values).** Commands that call PlayFab
@@ -112,7 +116,7 @@ new config keys. Before calling a feature finished, re-read all four and check t
   many-switch ones; the config for title-defined shapes (CloudScript, player sequences);
   values via `--var NAME=VALUE`, `$.column` rows, or reserved session names
   (`$session $playFabId $customId $titleId`); `$NAME?` is optional. Resolver:
-  `lib/inputs.resolve`.
+  `src/pfcli/inputs.resolve`.
 - **Credentials never reach output.** Every client record is scrubbed (request AND
   response) of the session ticket it used, via `client.protect()`; some CloudScripts echo
   the ticket back. Title-specific credentials (e.g. a game's login keys) go in the title's
@@ -131,19 +135,24 @@ new config keys. Before calling a feature finished, re-read all four and check t
   (`data.Error`, or an error-shaped `FunctionResult`); the command treats both as failure.
 - **Access tags.** READ ONLY, READ WRITE (PlayFab writes) or LOCAL WRITE (changes a local
   pfcli file only); the last two get `--dry-run` automatically.
-- **Segment exports are async** (`lib/commands/admin/segment_export.py`): start, poll
+- **Segment exports are async** (`src/pfcli/commands/admin/segment_export.py`): start, poll
   GetSegmentExport until an IndexUrl appears (failed states / timeout reported), download the
   index and the files it lists into `pfcli-exports/` (Git-ignored). Links are pre-signed:
   only `call_raw()` sees them; all output redacts URL query strings.
 - **Simple endpoints are table-driven.** Flat calls (player or title plus a few fields) are
-  `EndpointSpec` entries in `lib/commands/endpoints.py`, not separate modules; set `guard`
+  `EndpointSpec` entries in `src/pfcli/commands/endpoints.py`, not separate modules; set `guard`
   (`bulk` for writes, `always` for deletions). The README endpoint rows and the commands
   reference rows were generated from `SPECS`; keep them in sync when you add entries.
 - **Command naming.** Commands that call PlayFab go in their API family's group
   (`server`, `client`, later `admin`) and are named after the endpoint in kebab-case.
 - **Client API caution.** A Client login can create players or run the title's login
   CloudScript, which writes; say so when a command would use one.
-- **uv only.** `uv sync`, `uv run pfcli.py ...`, `uv add <pkg>`. Never `pip install`
+- **Packaging.** Package `playfab-cli-unofficial` (`pfcli` is taken on PyPI), command
+  `pfcli`. User files resolve from the pfcli home (`$PFCLI_HOME` or cwd, `pfcli.files.home()`),
+  never from the install folder. Releases: bump `pyproject.toml` version, push tag `vX.Y.Z`
+  (release workflow builds, smoke-tests and attaches the wheel). The user guide's Install page
+  documents `uv tool install`; the README's "Developer install" covers checkouts.
+- **uv only.** `uv sync`, `uv run pfcli ...`, `uv add <pkg>`. Never `pip install`
   into the global Python.
 - **Bootstrap.** `pfcli init` (LOCAL WRITE) creates/extends config + secrets pairs; never add
   an option or flow that accepts secret keys (they'd leak into shell history / transcripts).

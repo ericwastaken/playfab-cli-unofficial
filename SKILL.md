@@ -52,7 +52,7 @@ If you are asked to change pfcli's **code**, read `AGENT.md` in the repository i
 
 ## Bootstrap mode (no config yet, or "set up pfcli")
 
-Enter this mode when the pfcli folder has no `pfcli-config-*.yml`, or the user asks to set
+Enter this mode when the user's pfcli folder has no `pfcli-config-*.yml`, or the user asks to set
 pfcli up or add titles. Interview the user **one question at a time**, explaining where each
 fact is in PlayFab, then let `pfcli init` write the files.
 
@@ -97,22 +97,21 @@ fact is in PlayFab, then let `pfcli init` write the files.
 
 ## Find and run pfcli
 
-pfcli runs from its cloned folder with uv:
+Check whether it's installed: `pfcli --version`. If it isn't and the user agrees, install it
+as a uv tool (ask which version; the latest release tag is on
+https://github.com/ericwastaken/playfab-cli-unofficial/releases):
 
 ```bash
-cd <path>/playfab-cli-unofficial      # the folder with pfcli.py
-uv run pfcli.py --help
+uv tool install git+https://github.com/ericwastaken/playfab-cli-unofficial@v0.1.0
+pfcli --version            # if "command not found": uv tool update-shell, then a new terminal
 ```
 
-If it isn't installed and the user agrees:
-
-```bash
-git clone https://github.com/ericwastaken/playfab-cli-unofficial.git
-cd playfab-cli-unofficial && uv sync
-```
+pfcli reads the user's files from their **pfcli folder**: `$PFCLI_HOME`, or else the folder
+it's run from. Run commands from that folder (or with `PFCLI_HOME` set). Developers working
+on pfcli's code use a checkout instead (`uv run pfcli` there); see `AGENT.md`.
 
 The user's config is usually `pfcli-config-<name>.yml` in that folder; ask which one if
-there are several. Below, `pfcli` means `uv run pfcli.py`.
+there are several.
 
 **Option placement:** global options go **before** the command; command options **after**:
 

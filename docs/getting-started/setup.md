@@ -1,6 +1,7 @@
 # Set up your titles
 
-pfcli needs two small files, kept in the pfcli folder:
+pfcli needs two small files, kept in your pfcli folder (see [Install](../install.md#3-make-a-pfcli-folder);
+run the commands below from that folder):
 
 | File | What's in it | Secret? |
 |---|---|---|
@@ -27,15 +28,15 @@ pfcli init acme --title GAME-DEV=ABCD2 --title GAME-PROD=ABCD1 \
 Then paste your keys (step 2 below) and check with `titles --verify` (step 3). Prefer to
 let an AI agent walk you through it? See [Use pfcli with an AI agent](../agents.md).
 
-Or do it by hand:
+Or do it by hand (the example files are in the
+[repository](https://github.com/ericwastaken/playfab-cli-unofficial); `pfcli init NAME`
+with no titles also writes a commented starting point):
 
 ## 1. Create the config
 
-Copy the example and edit it:
-
-```bash
-cp pfcli-config.example.yml pfcli-config-acme.yml
-```
+Create `pfcli-config-acme.yml` (or download
+[`pfcli-config.example.yml`](https://github.com/ericwastaken/playfab-cli-unofficial/blob/main/pfcli-config.example.yml)
+and rename it):
 
 A minimal config:
 
@@ -60,8 +61,10 @@ titles:
 
 ## 2. Create the secrets file
 
+Create `pfcli-secrets-acme.yml` next to it and make it private:
+
 ```bash
-cp pfcli-secrets.example.yml pfcli-secrets-acme.yml
+touch pfcli-secrets-acme.yml
 chmod 600 pfcli-secrets-acme.yml
 ```
 

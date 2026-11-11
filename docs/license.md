@@ -41,8 +41,8 @@ pfcli and this site are built on these open-source projects, each under its own 
 | This site | [Material for MkDocs](https://github.com/squidfunk/mkdocs-material) | MIT |
 | This site | Material Design Icons by [Pictogrammers](https://pictogrammers.com/) (bundled with Material for MkDocs) | Pictogrammers Free License (icons under Apache 2.0) |
 
-pfcli installs these with its own dependencies (`uv sync`); their license files are included
-in each installed package.
+uv installs these together with pfcli; their license files are included in each installed
+package.
 
 ## PlayFab's own terms
 

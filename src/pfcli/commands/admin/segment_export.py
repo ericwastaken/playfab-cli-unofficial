@@ -28,7 +28,8 @@ EXPORTS_DIR = "pfcli-exports"
 FILES_NOTES = """
 \b
 Download: writes the index file and every data file into --dir (default:
-pfcli-exports/<ALIAS>-<EXPORT_ID>/ in the pfcli folder, which Git ignores).
+pfcli-exports/<ALIAS>-<EXPORT_ID>/ in the pfcli home folder: $PFCLI_HOME or the
+current folder).
 Existing files are never overwritten. The files are PLAYER DATA: keep them
 private and delete them when done. The download links PlayFab returns are
 pre-signed (they grant access by themselves), so pfcli never prints them:

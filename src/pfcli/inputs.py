@@ -72,11 +72,11 @@ def gather_rows(values: tuple[str, ...], column: str, source: str | None, from_c
     return rows
 
 
-def load_template(spec: str | None, default: dict, config_dir: Path, tool_dir: Path) -> dict:
+def load_template(spec: str | None, default: dict, config_dir: Path, home_dir: Path) -> dict:
     if not spec:
         return copy.deepcopy(default)
     try:
-        path = find_named(spec, TEMPLATES_DIR, config_dir, tool_dir, "Request template")
+        path = find_named(spec, TEMPLATES_DIR, config_dir, home_dir, "Request template")
     except NamedFileError as e:
         raise InputError(str(e))
     body = yaml.safe_load(path.read_text()) or {}

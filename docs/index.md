@@ -68,7 +68,7 @@ the way a game client does, run CloudScript, and get the results as JSON, CSV or
 
     ---
 
-    Get pfcli running on your computer in a few minutes.
+    One `uv tool install` command, and `pfcli` is ready to use.
 
     [Install pfcli](install.md)
 

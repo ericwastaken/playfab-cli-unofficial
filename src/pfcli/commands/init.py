@@ -159,7 +159,7 @@ Guide: {GUIDE}/getting-started/setup/
 @click.option("--host", multiple=True, metavar="ALIAS=URL",
               help="API host for a title on a dedicated cluster (repeatable).")
 @click.option("--dir", "directory", type=click.Path(file_okay=False, path_type=Path), default=None,
-              help="Folder for the files. Default: the pfcli folder (where Git ignores them).")
+              help="Folder for the files. Default: the pfcli home folder ($PFCLI_HOME, or the current folder).")
 @click.option("--force", is_flag=True, help="Overwrite an existing pair (new pair only).")
 @click.pass_context
 def init(ctx, name, titles_opt, add_opt, description, host, directory, force, dry_run):

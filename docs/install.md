@@ -1,62 +1,89 @@
 # Install pfcli
 
-pfcli runs from a folder on your computer. It uses **uv** to manage its own Python, so it
-never touches your system Python.
+pfcli installs as a regular command with **uv**, straight from GitHub. uv takes care of
+Python and pfcli's few dependencies in their own private environment, so nothing touches
+your system Python.
 
-## What you need
+!!! info "Want to work on pfcli's code?"
+    This page is for **using** pfcli. To change pfcli itself, follow the **developer
+    install** in the [README on GitHub](https://github.com/ericwastaken/playfab-cli-unofficial#developer-install).
 
-- **macOS, Linux or Windows** with a terminal.
-- **Git**, to download pfcli.
-- **uv**, the Python tool manager. If you don't have it, follow
-  [uv's installation guide](https://docs.astral.sh/uv/getting-started/installation/)
-  (one command on most systems).
-- A **PlayFab title** you are allowed to work with, and its **title secret key** (for the
-  `server` commands). Player commands don't need a secret key.
+## 1. Install uv
 
-## Download and set up
+If you don't have uv yet, follow [uv's installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+(one command on macOS, Linux and Windows).
 
-```bash
-git clone https://github.com/ericwastaken/playfab-cli-unofficial.git
-cd playfab-cli-unofficial
-uv sync
-```
+## 2. Install pfcli
 
-`uv sync` downloads the right Python and pfcli's few dependencies into a private `.venv`
-folder inside `playfab-cli-unofficial`.
-
-Check that it works:
+Install a released version (recommended). Replace `v0.1.0` with the version you want from
+the [Releases page](https://github.com/ericwastaken/playfab-cli-unofficial/releases):
 
 ```bash
-uv run pfcli.py --help
+uv tool install git+https://github.com/ericwastaken/playfab-cli-unofficial@v0.1.0
 ```
 
-You should see pfcli's commands and options.
-
-## A shorter command
-
-Throughout this guide, **`pfcli`** means `uv run pfcli.py`, run from the
-`playfab-cli-unofficial` folder. To type `pfcli` from anywhere, add a shell alias (adjust the
-path to where you cloned it):
+Check it:
 
 ```bash
-alias pfcli='uv run --project ~/tools/playfab-cli-unofficial ~/tools/playfab-cli-unofficial/pfcli.py'
+pfcli --version
 ```
 
-Put that line in your `~/.zshrc` or `~/.bashrc` to keep it.
+!!! tip "`pfcli: command not found`?"
+    uv puts tools in its own folder. Run `uv tool update-shell` once, then open a new
+    terminal.
 
-## Update to the latest version
+??? note "Other ways to install"
+    **Latest development version** (may change at any time):
+    ```bash
+    uv tool install git+https://github.com/ericwastaken/playfab-cli-unofficial
+    ```
+    **From a release's wheel file** (the `.whl` attached to each
+    [release](https://github.com/ericwastaken/playfab-cli-unofficial/releases)):
+    ```bash
+    uv tool install https://github.com/ericwastaken/playfab-cli-unofficial/releases/download/v0.1.0/playfab_cli_unofficial-0.1.0-py3-none-any.whl
+    ```
+    **Run once without installing**:
+    ```bash
+    uvx --from git+https://github.com/ericwastaken/playfab-cli-unofficial@v0.1.0 pfcli --help
+    ```
+
+## 3. Make a pfcli folder
+
+pfcli keeps **your** files (config, secrets, player logins, your own formats, exports) in a
+folder you choose: your **pfcli home**. Make a private folder for them:
 
 ```bash
-cd playfab-cli-unofficial
-git pull
-uv sync
+mkdir -p ~/pfcli
+cd ~/pfcli
 ```
 
-Your own config, secrets and format files are never touched by an update: they're ignored by
-Git (see [Files and Git](reference/files-and-git.md)).
+pfcli uses the folder you run it from. To use the same folder from anywhere, set
+`PFCLI_HOME` (add it to `~/.zshrc` or `~/.bashrc` to keep it):
 
-!!! tip "Moved the folder?"
-    The `.venv` folder doesn't survive being moved. If pfcli stops starting after a move,
-    delete `.venv` and run `uv sync` again.
+```bash
+export PFCLI_HOME=~/pfcli
+```
+
+!!! warning "Keep this folder private"
+    It will hold secret keys and player data. Don't put it inside a shared or synced folder
+    you don't control, and don't commit it to Git. If you keep it in a Git repository, add
+    these lines to that repository's `.gitignore`:
+    ```gitignore
+    pfcli*.yml
+    pfcli*.yaml
+    pfcli*.tmp
+    output-formats/user-*
+    request-templates/user-*
+    pfcli-exports/
+    ```
+
+## Update or remove
+
+```bash
+uv tool install --force git+https://github.com/ericwastaken/playfab-cli-unofficial@v0.2.0   # update to a version
+uv tool uninstall playfab-cli-unofficial                                                  # remove
+```
+
+Updating or removing pfcli never touches your pfcli folder.
 
 Next: [Set up your titles](getting-started/setup.md).

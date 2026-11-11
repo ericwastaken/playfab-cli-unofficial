@@ -20,7 +20,8 @@ Only results go to the output; messages go to the screen. See
 
 ## Use a built-in format
 
-pfcli comes with ready-made formats. Pick one with `-o NAME` (before the command name):
+pfcli comes with ready-made formats (built in, nothing to download). Pick one with
+`-o NAME` (before the command name):
 
 | Format | Gives you |
 |---|---|
@@ -41,12 +42,15 @@ pfcli --config pfcli-config-acme.yml -o player-summary \
 
 ## Make your own format
 
-A format is a small YAML file in the `output-formats` folder. **Name your own formats
-`user-<something>.yml`**: those stay private (Git ignores them), so you can put
-project-specific details in them. Easiest start: copy a built-in one.
+A format is a small YAML file in an `output-formats` folder inside your pfcli folder.
+**Name your own formats `user-<something>.yml`** so they're easy to keep private. Easiest
+start: copy a built-in one from
+[pfcli's built-in formats](https://github.com/ericwastaken/playfab-cli-unofficial/tree/main/src/pfcli/builtin/output-formats):
 
 ```bash
-cp output-formats/leaderboard-names.yml output-formats/user-acme-names.yml
+mkdir -p output-formats
+curl -fsSL https://raw.githubusercontent.com/ericwastaken/playfab-cli-unofficial/main/src/pfcli/builtin/output-formats/leaderboard-names.yml \
+  -o output-formats/user-acme-names.yml
 ```
 
 Then use it as `-o user-acme-names`.

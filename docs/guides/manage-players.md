@@ -88,8 +88,8 @@ pfcli --config pfcli-config-acme.yml admin export-players-in-segment GAME-DEV \
 
 - Progress (`Pending`, `Processing`, ...) is shown on screen while it waits. `--timeout`
   (default 900 seconds) and `--poll` (default 10) control the waiting.
-- The files land in `pfcli-exports/GAME-DEV-<EXPORT_ID>/` in the pfcli folder (Git ignores
-  that folder), or in `--dir`. pfcli never overwrites files.
+- The files land in `pfcli-exports/GAME-DEV-<EXPORT_ID>/` in your pfcli folder (keep it
+  private), or in `--dir`. pfcli never overwrites files.
 - You can also do it in steps:
 
   ```bash
