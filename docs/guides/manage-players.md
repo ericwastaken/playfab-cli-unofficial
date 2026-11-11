@@ -68,13 +68,49 @@ pfcli --config pfcli-config-acme.yml admin delete-master-player-account GAME-DEV
 
 ```bash
 pfcli --config pfcli-config-acme.yml -o catalog-items server get-catalog-items GAME-DEV
-pfcli --config pfcli-config-acme.yml admin get-all-segments GAME-DEV
-pfcli --config pfcli-config-acme.yml admin export-players-in-segment GAME-DEV --segment-id ABC123
-pfcli --config pfcli-config-acme.yml admin get-segment-export GAME-DEV --export-id XYZ789
+pfcli --config pfcli-config-acme.yml -o segments-table admin get-all-segments GAME-DEV
 ```
 
-Exporting a segment starts a job on PlayFab; `get-segment-export` reports its status and,
-when finished, where to download the result.
+## Export the players in a segment
+
+PlayFab exports a segment **in the background**: it takes a snapshot of every matching
+player profile and prepares it as files. That can take a while for big segments, so pfcli
+lets you wait for it and download the result in one go:
+
+```bash
+# Find the segment's ID
+pfcli --config pfcli-config-acme.yml -o segments-table admin get-all-segments GAME-DEV
+
+# Start the export, wait until it's ready, and download the files
+pfcli --config pfcli-config-acme.yml admin export-players-in-segment GAME-DEV \
+  --segment-id 1A2B3C4D5E6F7A8B --download
+```
+
+- Progress (`Pending`, `Processing`, ...) is shown on screen while it waits. `--timeout`
+  (default 900 seconds) and `--poll` (default 10) control the waiting.
+- The files land in `pfcli-exports/GAME-DEV-<EXPORT_ID>/` in the pfcli folder (Git ignores
+  that folder), or in `--dir`. pfcli never overwrites files.
+- You can also do it in steps:
+
+  ```bash
+  pfcli --config pfcli-config-acme.yml admin export-players-in-segment GAME-DEV --segment-id 1A2B3C4D5E6F7A8B
+  pfcli --config pfcli-config-acme.yml admin get-segment-export GAME-DEV --export-id <EXPORT_ID>
+  pfcli --config pfcli-config-acme.yml admin download-segment-export GAME-DEV --export-id <EXPORT_ID>
+  ```
+
+What you get: an index file (`exportcomplete.txt`, one download link per line) and one or
+more **TSV** files (tab-separated, one row per player, with a header row). Columns include
+`PlayerId`, `DisplayName`, `Created`, `LastLogin`, `Tags`, `PlayerStatistics`,
+`VirtualCurrencyBalances`, `LinkedAccounts`, `ContactEmailAddresses` and last-login
+location (country, city, latitude/longitude). Open them in a spreadsheet, or process them
+with your own tools.
+
+!!! danger "Exports are player data"
+    The files contain player profiles, including **email addresses and location**. Keep
+    them private, share them only as your privacy
+    rules allow, and delete them when you're done. The download links PlayFab returns work
+    on their own (no key needed), so pfcli never shows them in full: their access part
+    appears as `<redacted>`.
 
 ## The same actions as a player
 

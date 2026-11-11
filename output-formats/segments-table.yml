@@ -1,0 +1,9 @@
+# `server|admin get-all-segments` as a tab-separated table.
+description: Player segments as TSV
+format: tsv
+rows: response.data.Segments
+fields:
+  title: title
+  id: row.Id
+  name: row.Name
+  description: row.Description

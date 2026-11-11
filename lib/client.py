@@ -191,6 +191,18 @@ class TitleClient(_Base):
             raise PlayFabError(f"no secret key for title {self.title_id} "
                                f"(add it to the secrets file, or set PFCLI_SECRET_{self.title_id.upper()})")
 
+    def call_raw(self, endpoint: str, body: dict) -> tuple[dict, dict]:
+        """(PlayFab's raw reply, protected envelope) for READ endpoints whose reply holds a
+        link the command must follow (e.g. a pre-signed download URL). Emit only the
+        protected envelope; never print or log the raw reply."""
+        if endpoint_access(endpoint) != READ:
+            raise PlayFabError(f"{endpoint}: call_raw is for read endpoints only")
+        self._check(endpoint)
+        env = self._envelope(endpoint, body)
+        raw = self._post(endpoint, body, {"X-SecretKey": self.key})
+        env["response"] = raw
+        return raw, self.protect(env)
+
     def call(self, endpoint: str, body: dict, dry_run: bool = False) -> dict:
         """POST to "<Family>/<Endpoint>" and return the output envelope:
         {title, titleId, endpoint, at, request, response}, where `response` is PlayFab's own
@@ -222,9 +234,19 @@ class PlayerClient(_Base):
         return self.protect(env, session_ticket)
 
 
+# Any URL with a query string: download links PlayFab hands out (e.g. segment exports) are
+# usually pre-signed, so the query string IS a credential. Keep scheme, host and path.
+SIGNED_URL = re.compile(r"(https?://[^\s\"'?#]+)\?[^\s\"'#]+")
+
+
+def redact_url(url: str) -> str:
+    return SIGNED_URL.sub(r"\1?<redacted>", url)
+
+
 def _scrub(obj, secrets, patterns=()):
     """Copy of obj with every occurrence of the secrets (strings) and of the patterns
-    (compiled regexes) inside string values replaced by <redacted>."""
+    (compiled regexes) inside string values replaced by <redacted>. URL query strings are
+    always redacted (they may be pre-signed access links)."""
     if isinstance(secrets, str):
         secrets = [secrets]
     if isinstance(obj, dict):
@@ -237,6 +259,7 @@ def _scrub(obj, secrets, patterns=()):
                 obj = obj.replace(s, "<redacted>")
         for p in patterns:
             obj = p.sub("<redacted>", obj)
+        obj = SIGNED_URL.sub(r"\1?<redacted>", obj)
     return obj
 
 

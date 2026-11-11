@@ -16,6 +16,8 @@ request-templates/user-*
 *.env
 
 # --- Local only ---
+# Downloaded segment exports (player data)
+pfcli-exports/
 HANDOFF*.md
 output/
 

@@ -30,6 +30,7 @@ pfcli comes with ready-made formats. Pick one with `-o NAME` (before the command
 | `player-summary` | CSV per player from combined info: title, playFabId, displayName, created, lastLogin, error |
 | `titles-table` | Your titles as a table |
 | `sessions-table` | Saved player sessions as a table |
+| `segments-table` | `get-all-segments` as a table: title, id, name, description |
 | `catalog-items` | CSV of catalog items: title, itemId, itemClass, displayName, catalogVersion, prices |
 | `data` | Just the `data` part of each PlayFab reply |
 

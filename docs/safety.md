@@ -131,6 +131,13 @@ pfcli --config pfcli-config-acme.yml client sessions flush --all
 3. If those were **test players**, consider removing them from the title. If they were
    **real players**, treat it as a security incident under your team's process.
 
+## Segment exports
+
+`admin export-players-in-segment --download` saves **player profiles** to files. Keep them
+in the default `pfcli-exports/` folder (Git ignores it) or another private place, and delete
+them when done. The download links PlayFab returns grant access on their own, so pfcli
+hides their access part (`?<redacted>`) everywhere it prints them.
+
 ## Writes, dry runs and retries
 
 - Every command is tagged **READ ONLY**, **READ WRITE** (changes data in PlayFab) or

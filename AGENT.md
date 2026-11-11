@@ -131,6 +131,10 @@ new config keys. Before calling a feature finished, re-read all four and check t
   (`data.Error`, or an error-shaped `FunctionResult`); the command treats both as failure.
 - **Access tags.** READ ONLY, READ WRITE (PlayFab writes) or LOCAL WRITE (changes a local
   pfcli file only); the last two get `--dry-run` automatically.
+- **Segment exports are async** (`lib/commands/admin/segment_export.py`): start, poll
+  GetSegmentExport until an IndexUrl appears (failed states / timeout reported), download the
+  index and the files it lists into `pfcli-exports/` (Git-ignored). Links are pre-signed:
+  only `call_raw()` sees them; all output redacts URL query strings.
 - **Simple endpoints are table-driven.** Flat calls (player or title plus a few fields) are
   `EndpointSpec` entries in `lib/commands/endpoints.py`, not separate modules; set `guard`
   (`bulk` for writes, `always` for deletions). The README endpoint rows and the commands

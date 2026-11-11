@@ -72,8 +72,9 @@ Same key as `server`; PlayFab's Admin API also covers account-level and title-ma
 | `admin get-user-account-info ALIAS... -p ID...` | READ ONLY | Read players' account info. |
 | `admin get-all-segments ALIAS...` | READ ONLY | List the title's player segments. |
 | `admin get-player-segments ALIAS... -p ID...` | READ ONLY | List the segments a player belongs to. |
-| `admin export-players-in-segment ALIAS... --segment-id VALUE` | READ ONLY | Start an export of all players in a segment. |
-| `admin get-segment-export ALIAS... --export-id VALUE` | READ ONLY | Read the status and download links of a segment export. |
+| `admin export-players-in-segment ALIAS... --segment-id ID [--wait] [--download] [--dir DIR] [--timeout S] [--poll S]` | READ ONLY | Export all players in a segment. PlayFab prepares it in the background: `--wait` polls until ready, `--download` then saves the files (player data) to `--dir` (default `pfcli-exports/`, ignored by Git). |
+| `admin get-segment-export ALIAS... --export-id ID` | READ ONLY | Check an export once: its state, or (when ready) its index link with the access part hidden. |
+| `admin download-segment-export ALIAS --export-id ID [--dir DIR] [--timeout S] [--poll S]` | READ ONLY | Wait for an export if needed, then download its index and data files. Never overwrites files. |
 | `admin delete-player ALIAS... -p ID...` | **READ WRITE** | Delete players from this title (their title data). **Cannot be undone: always needs `--yes`.** |
 | `admin delete-master-player-account ALIAS... -p ID... [--metadata VALUE]` | **READ WRITE** | Permanently delete players' master accounts (all titles). **Cannot be undone: always needs `--yes`.** |
 

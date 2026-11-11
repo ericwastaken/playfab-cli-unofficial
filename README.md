@@ -152,6 +152,7 @@ lib/inputs.py               input rows (CSV/NDJSON), request templates, placehol
 lib/sessions.py             player session store (chmod 600), expiry, redaction helpers
 lib/files.py                NAME vs path lookup for formats and templates
 lib/commands/titles.py      `titles` (+ `--verify`: one harmless Server/GetTitleData per title)
+lib/commands/admin/segment_export.py  async segment export: start, poll (--wait), download
 lib/commands/init.py        `init`: creates/extends a config + chmod-600 secrets pair (LOCAL WRITE)
 lib/commands/common.py      shared paging/concurrency helpers
 lib/commands/endpoints.py   table-driven commands for simple flat endpoints (server/admin/client)
@@ -239,6 +240,10 @@ security-relevant. The user-facing version of this section is the guide's
 - **Setup errors explain themselves.** `error_text()` adds a fix-it hint for
   `InvalidAPIEndpoint` (dedicated cluster / wrong title ID) and rejected secret keys, pointing
   to `pfcli titles --verify`; there is deliberately no automatic pre-flight call.
+- **URL query strings are always redacted** in output (`SIGNED_URL` in `_scrub`): download
+  links PlayFab returns (segment exports) are pre-signed, so the query string is a credential.
+  Code that must follow such a link uses `TitleClient.call_raw()` (reads only) and never
+  prints the raw reply. Downloaded exports default to the Git-ignored `pfcli-exports/`.
 - **Writes are never retried on a server error.** HTTP 429 (rate limited, nothing done) is
   retried with backoff; HTTP 5xx is retried only for reads. A write that fails with 5xx may
   already have been applied (e.g. items granted), so pfcli stops and says to check first.

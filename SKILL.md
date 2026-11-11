@@ -159,8 +159,13 @@ friends (`get-friends-list`, `add-friend`, `remove-friend`), `update-avatar-url`
 (`get-player-tags`, `add-player-tag`, `remove-player-tag`), `consume-item`,
 `add-user-virtual-currency` / `subtract-user-virtual-currency`, `get-catalog-items`,
 `get-leaderboard-around-user` (client: `-around-player`), `get-user-account-info`,
-`get-all-segments`, `get-player-segments`, `admin export-players-in-segment` /
-`get-segment-export`, and deletions `delete-player` / `admin delete-master-player-account`
+`get-all-segments` (format `segments-table`), `get-player-segments`, segment exports
+(`admin export-players-in-segment --segment-id ID [--wait] [--download] [--dir DIR]`,
+`admin get-segment-export`, `admin download-segment-export`; asynchronous: PlayFab prepares
+the files in the background; downloads are PLAYER DATA (TSV with emails, linked accounts, last-login location), so only
+download when the user asked, never paste their contents into chat,
+keep them in `pfcli-exports/` (Git-ignored), and never try to reveal the `<redacted>` link
+parts), and deletions `delete-player` / `admin delete-master-player-account`
 (always `--yes`). Run `pfcli server --help`, `pfcli admin --help`, `pfcli client --help`.
 
 Client commands need a saved session from step 1 with the same `-u`; they never log in by

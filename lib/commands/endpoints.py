@@ -248,10 +248,6 @@ SPECS = [
     EndpointSpec("Admin/GetUserAccountInfo", "player", "Read players' account info."),
     EndpointSpec("Admin/GetAllSegments", "title", "List the title's player segments."),
     EndpointSpec("Admin/GetPlayerSegments", "player", "List the segments a player belongs to."),
-    EndpointSpec("Admin/ExportPlayersInSegment", "title", "Start an export of all players in a segment.",
-                 details="Starts an export job and returns its ExportId; read the result with "
-                         "admin get-segment-export.",
-                 fields=[P(("--segment-id",), "SegmentId", "Segment ID (from get-all-segments).", required=True)]),
     EndpointSpec("Admin/GetSegmentExport", "title", "Read the status and download links of a segment export.",
                  fields=[P(("--export-id",), "ExportId", "Export ID from export-players-in-segment.",
                            required=True)]),

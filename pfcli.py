@@ -29,6 +29,7 @@ from lib.commands.client.update_user_title_display_name import update_user_title
 from lib.commands.server.get_leaderboard import get_leaderboard
 from lib.commands.server.get_player_combined_info import get_player_combined_info
 from lib.commands.server.get_title_data import get_title_data
+from lib.commands.admin.segment_export import download_segment_export, export_players_in_segment
 from lib.commands.init import init
 from lib.commands.titles import titles
 from lib.config import Config, ConfigError, Secrets, paired_secrets_path
@@ -132,6 +133,8 @@ for cmd in (login_with_custom_id, client_get_leaderboard, client_get_player_prof
 for family, group in (("Server", server), ("Admin", admin), ("Client", client)):
     for cmd in commands_for(family):
         group.add_command(cmd)
+admin.add_command(export_players_in_segment)
+admin.add_command(download_segment_export)
 sessions.add_command(list_sessions)
 sessions.add_command(flush_sessions)
 

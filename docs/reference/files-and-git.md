@@ -8,6 +8,7 @@ be committed by accident, even if you work inside the pfcli folder.
 | `pfcli-config-<name>.yml`, `pfcli-secrets-<name>.yml`, `pfcli-sessions-<name>.yml` | Yes |
 | Any other `pfcli*.yml` / `pfcli*.yaml` (e.g. `pfcli-config.yml`) | Yes |
 | `output-formats/user-*.yml`, `request-templates/user-*.yml` | Yes |
+| `pfcli-exports/` (downloaded segment exports: player data) | Yes |
 | `.env` files (pfcli doesn't use them; ignored just in case) | Yes |
 | `pfcli-config.example.yml`, `pfcli-secrets.example.yml` | No: examples that ship with pfcli |
 | Other files in `output-formats/` and `request-templates/` | No: built-in, ship with pfcli |
